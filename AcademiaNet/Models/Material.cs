@@ -16,4 +16,11 @@ public sealed class Material
 
     public string? FileUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // link to salon and tutor who owns/created material
+    public int? SalonId { get; set; }
+    public Salon? Salon { get; set; }
+    public int? TutorId { get; set; }
+    public Tutor? Tutor { get; set; }
+    public int? CreatedById { get; set; }
 }

@@ -13,4 +13,5 @@ public sealed class Salon
 
     public List<Horario> Horarios { get; set; } = new();
     public List<Alumno> Alumnos { get; set; } = new();
+    public List<Material> Materiales { get; set; } = new();
 }

@@ -1,0 +1,21 @@
+@page
+@model Academic.Pages.Account.LogoutModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Cerrar sesión";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h4 class="mb-3">¿Deseas cerrar sesión?</h4>
+                <p class="text-muted">@User.Identity?.Name</p>
+                <form method="post">
+                    <button type="submit" class="btn btn-danger me-2">Cerrar sesión</button>
+                    <a asp-page="/Index" class="btn btn-outline-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

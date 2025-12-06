@@ -10,5 +10,7 @@ public sealed class Alumno
     public int? SalonId { get; set; }
     public Salon? Salon { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     public List<Matricula> Matriculas { get; set; } = new();
 }

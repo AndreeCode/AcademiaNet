@@ -16,20 +16,34 @@
             --muted: #6c757d;
             --card-radius: 10px;
         }
+
+        /* Base */
         body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f8f9fa; }
-        .hero { background-image: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('https://images.unsplash.com/photo-1554774853-a6b1b2ff2f0b?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s='); background-size: cover; background-position: center; color: #fff; padding: 5rem 0; }
         .brand-logo { height: 36px; }
+
+        /* Theme buttons */
         .btn-primary { background-color: var(--brand); border-color: var(--brand); }
-        .btn-primary:hover { background-color: var(--accent); border-color: var(--accent); }
+        .btn-primary:hover, .btn-primary:focus { background-color: var(--accent); border-color: var(--accent); }
         .btn-outline-danger { color: var(--brand); border-color: var(--brand); }
+
+        /* Cards, sidebar and utilities */
         .card { border-radius: var(--card-radius); }
         .sidebar .list-group-item { border: none; }
         .card-header.bg-dark { background-color: var(--brand) !important; }
         .nav-user { min-width: 220px; }
+
+        /* Responsive sidebar: hide on small screens */
+        .sidebar { display: block; }
+        .sidebar-mobile { display: none; }
+
         @@media (max-width: 767px) {
             .sidebar { display: none; }
             .sidebar-mobile { display: block; }
         }
+
+        /* Small helpers for tables and lists inside cards */
+        .table-sm td, .table-sm th { padding: .4rem .6rem; }
+        .list-group-flush .list-group-item { padding-left: 1rem; padding-right: 1rem; }
     </style>
 </head>
 <body>
@@ -48,10 +62,12 @@
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
                     <li class="nav-item"><a class="nav-link" asp-page="/Index">Inicio</a></li>
                     <li class="nav-item"><a class="nav-link" asp-page="/Public/Matriculate">Matricúlate</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-page="/Public/Materials">Materiales</a></li>
 
                     @if (SignInManager?.IsSignedIn(User) ?? false)
                     {
+                        var currentUser = await UserManager.GetUserAsync(User);
+                        var roles = currentUser != null ? (await UserManager.GetRolesAsync(currentUser)).ToList() : new List<string>();
+
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 @User.Identity?.Name
@@ -60,10 +76,51 @@
                                 <li><a class="dropdown-item" asp-page="/Account/Manage">Mi cuenta</a></li>
                                 <li><a class="dropdown-item" asp-page="/Account/Logout">Cerrar sesión</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><a class="dropdown-item" asp-page="/Alumno/Dashboard">Panel alumno</a></li>
-                                <li><a class="dropdown-item" asp-page="/Tutor/Dashboard">Panel tutor</a></li>
-                                <li><a class="dropdown-item" asp-page="/Profesor/Dashboard">Panel profesor</a></li>
-                                <li><a class="dropdown-item" asp-page="/Admin/Dashboard">Panel admin</a></li>
+
+                                @* Show role information and dashboard links. Only show multiple role links if Admin or user has more than one role. *@
+                                @if (roles.Count == 0)
+                                {
+                                    <li class="dropdown-item text-muted">Sin roles asignados</li>
+                                }
+                                else if (roles.Contains("Admin") || roles.Count > 1)
+                                {
+                                    foreach (var r in roles)
+                                    {
+                                        if (r == "Admin")
+                                        {
+                                            <li><a class="dropdown-item" asp-page="/Admin/Dashboard">Panel Admin</a></li>
+                                        }
+                                        else if (r == "Profesor")
+                                        {
+                                            <li><a class="dropdown-item" asp-page="/Profesor/Dashboard">Panel Profesor</a></li>
+                                        }
+                                        else if (r == "Tutor")
+                                        {
+                                            <li><a class="dropdown-item" asp-page="/Tutor/Dashboard">Panel Tutor</a></li>
+                                        }
+                                        else if (r == "Coordinador")
+                                        {
+                                            <li><a class="dropdown-item" asp-page="/Coordinador/Dashboard">Panel Coordinador</a></li>
+                                        }
+                                        else if (r == "Alumno")
+                                        {
+                                            <li><a class="dropdown-item" asp-page="/Alumno/Dashboard">Panel Alumno</a></li>
+                                        }
+                                        else
+                                        {
+                                            <li class="dropdown-item disabled">@r</li>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    var single = roles.FirstOrDefault();
+                                    if (single == "Admin") { <li><a class="dropdown-item" asp-page="/Admin/Dashboard">Panel Admin</a></li> }
+                                    else if (single == "Profesor") { <li><a class="dropdown-item" asp-page="/Profesor/Dashboard">Panel Profesor</a></li> }
+                                    else if (single == "Tutor") { <li><a class="dropdown-item" asp-page="/Tutor/Dashboard">Panel Tutor</a></li> }
+                                    else if (single == "Coordinador") { <li><a class="dropdown-item" asp-page="/Coordinador/Dashboard">Panel Coordinador</a></li> }
+                                    else if (single == "Alumno") { <li><a class="dropdown-item" asp-page="/Alumno/Dashboard">Panel Alumno</a></li> }
+                                }
                             </ul>
                         </li>
                     }
@@ -104,5 +161,9 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@3.2.12/dist/jquery.validate.unobtrusive.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
