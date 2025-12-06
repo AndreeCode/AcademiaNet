@@ -1,0 +1,108 @@
+@page
+@model Academic.Pages.IndexModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Inicio";
+}
+
+<section class="bg-dark text-light py-5" style="background-image: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s='); background-size:cover; background-position:center; padding-top:100px;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7 text-white">
+                <h1 class="display-4 fw-bold">Academia Zoe Ayacucho</h1>
+                <p class="lead mb-4">Transforma tu futuro con cursos presenciales y virtuales, tutores especializados y recursos multimedia.</p>
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                    <a asp-page="/Account/Login" class="btn btn-primary btn-lg" role="button" aria-label="Iniciar sesión">Iniciar sesión</a>
+                    <a asp-page="/Public/Matriculate" class="btn btn-outline-light btn-lg" role="button" aria-label="Matricúlate ahora">Matricúlate ahora</a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block text-end">
+                <img src="https://images.unsplash.com/photo-1529070538774-1843cb3265df?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=" alt="Clases" class="img-fluid rounded shadow-lg" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center mb-4">
+            <div class="col-md-8 mx-auto">
+                <h2 class="h3 fw-bold">¿Por qué elegir Academia Zoe?</h2>
+                <p class="text-muted">Metodología práctica, profesores certificados y soporte personalizado para cada estudiante.</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm feature-card">
+                    <img src="https://images.unsplash.com/photo-1555819202-9b6a7d8b3c7d?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=" class="card-img-top" alt="Profesores" />
+                    <div class="card-body">
+                        <h5 class="card-title">Profesores Expertos</h5>
+                        <p class="card-text text-muted">Docentes con experiencia que guían tu aprendizaje paso a paso.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm feature-card">
+                    <img src="https://images.unsplash.com/photo-1588702547923-7093a6c3ba33?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=" class="card-img-top" alt="Recursos" />
+                    <div class="card-body">
+                        <h5 class="card-title">Recursos Multimedia</h5>
+                        <p class="card-text text-muted">Biblioteca de videos y materiales descargables para reforzar tus clases.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm feature-card">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=" class="card-img-top" alt="Horario" />
+                    <div class="card-body">
+                        <h5 class="card-title">Horarios Flexibles</h5>
+                        <p class="card-text text-muted">Programas por ciclo con opciones presenciales y virtuales.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h3 class="fw-bold">Inscríbete en pocos pasos</h3>
+                <p class="text-muted">Completa el formulario de matrícula y realiza el pago seguro en línea. Puedes pagar con Mercado Pago.</p>
+                <a asp-page="/Public/Matriculate" class="btn btn-primary">Comenzar matrícula</a>
+            </div>
+            <div class="col-md-6 text-center">
+                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=" alt="Matricula" class="img-fluid rounded shadow-sm" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 mb-3">
+                <h5 class="fw-bold">Contacto</h5>
+                <p class="text-muted small">Calle Ficticia 123, Ayacucho · Tel: (01) 234-5678 · info@academiazoe.pe</p>
+            </div>
+            <div class="col-lg-8">
+                <h5 class="fw-bold">Testimonios</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded">
+                            <p class="mb-1">"Excelente atención y materiales de calidad."</p>
+                            <small class="text-muted">— María, estudiante</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded">
+                            <p class="mb-1">"Me ayudaron a mejorar mis notas rápidamente."</p>
+                            <small class="text-muted">— José, estudiante</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

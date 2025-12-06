@@ -1,0 +1,49 @@
+@page
+@model Academic.Pages.Public.MatriculateModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<section class="hero text-center">
+    <div class="container">
+        <h1 class="display-5 fw-bold">Matricúlate en Academia Zoe</h1>
+        <p class="lead">Inscríbete al próximo ciclo y accede a tutorías, recursos y clases en vivo.</p>
+    </div>
+</section>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="mb-3">Formulario de matriculación</h4>
+                    <form method="post">
+                        <div class="row gx-2">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nombre</label>
+                                <input asp-for="Input.Nombre" class="form-control form-control-lg" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Apellido</label>
+                                <input asp-for="Input.Apellido" class="form-control form-control-lg" />
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Correo Electrónico</label>
+                                <input asp-for="Input.Email" class="form-control form-control-lg" />
+                            </div>
+                            <div class="col-12 mb-3 form-check">
+                                <input asp-for="Input.AcceptTerms" class="form-check-input" />
+                                <label class="form-check-label">Acepto términos y políticas</label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg">Matricular y Pagar</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

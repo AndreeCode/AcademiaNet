@@ -1,0 +1,138 @@
+@page
+@model Academic.Pages.Alumno.DashboardModel
+@{
+    ViewData["Title"] = "Panel del estudiante";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body text-center">
+                <img src="https://ui-avatars.com/api/?name=@(Model.CurrentAlumno?.Nombre)%20@(Model.CurrentAlumno?.Apellido)&background=800020&color=fff&size=128" class="rounded-circle mb-2" alt="avatar" />
+                <h5 class="mb-0">@Model.CurrentAlumno?.Nombre @Model.CurrentAlumno?.Apellido</h5>
+                <small class="text-muted">Alumno</small>
+            </div>
+            <div class="list-group list-group-flush">
+                <a class="list-group-item list-group-item-action active" href="#">Resumen</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Public/Materials">Biblioteca</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Account/Manage">Mi cuenta</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Account/Logout">Cerrar sesión</a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">Sede / Aula</div>
+            <div class="card-body">
+                @if (Model.Salon != null)
+                {
+                    <p class="mb-1"><strong>Sede:</strong> @Model.Sede?.Nombre</p>
+                    <p class="mb-1"><strong>Aula:</strong> @Model.Salon?.Nombre</p>
+                }
+                else
+                {
+                    <p>No asignada</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0">Panel del estudiante</h4>
+                    <small class="text-muted">Ciclo activo: <strong>Ciclo 2025-II</strong></small>
+                </div>
+                <div>
+                    <a class="btn btn-outline-secondary me-2" asp-page="/Public/Matriculate">Matrícula</a>
+                    <a class="btn btn-primary" asp-page="/Public/Materials">Ir a biblioteca</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-dark text-white">Matrículas</div>
+                    <div class="card-body">
+                        @if (Model.Matriculas.Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var m in Model.Matriculas)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@m.Ciclo?.Nombre</strong><br />
+                                            <small class="text-muted">@m.EstadoPago</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div>@m.Monto.ToString("C")</div>
+                                            <small class="text-muted">@m.CreatedAt.ToString("g")</small>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p>No tienes matrículas registradas.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-dark text-white">Horario</div>
+                    <div class="card-body">
+                        @if (Model.Horarios.Any())
+                        {
+                            <table class="table table-borderless table-sm mb-0">
+                                <thead>
+                                    <tr><th>Día</th><th>Inicio</th><th>Fin</th><th>Enlace</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var h in Model.Horarios)
+                                    {
+                                        <tr>
+                                            <td>@h.Dia</td>
+                                            <td>@h.HoraInicio.ToString(@"hh\:mm")</td>
+                                            <td>@h.HoraFin.ToString(@"hh\:mm")</td>
+                                            <td>@(string.IsNullOrEmpty(h.LinkMeet) ? "-" : Html.Raw($"<a href=\"{h.LinkMeet}\" target=\"_blank\">Meet</a>"))</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p>No hay horarios asignados.</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header bg-dark text-white">Biblioteca</div>
+                    <div class="card-body">
+                        <p>Accede a materiales por semana y curso.</p>
+                        <a class="btn btn-outline-danger" asp-page="/Public/Materials">Ver materiales</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 mt-3">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">Noticias</div>
+                    <div class="card-body">
+                        <p class="mb-0 text-muted">Aquí aparecerán novedades del ciclo y comunicados del tutor o administración.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header.bg-dark { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+</style>

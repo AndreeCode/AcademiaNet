@@ -1,0 +1,12 @@
+@model dynamic
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach (var e in ViewData.ModelState.SelectMany(kvp => kvp.Value.Errors))
+            {
+                <li>@e.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}

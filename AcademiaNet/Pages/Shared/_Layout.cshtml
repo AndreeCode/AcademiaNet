@@ -1,0 +1,108 @@
+@inherits Microsoft.AspNetCore.Mvc.Razor.RazorPage<dynamic>
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Academia Zoe Ayacucho - @ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --brand: #800020;
+            --accent: #b3002a;
+            --muted: #6c757d;
+            --card-radius: 10px;
+        }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f8f9fa; }
+        .hero { background-image: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('https://images.unsplash.com/photo-1554774853-a6b1b2ff2f0b?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s='); background-size: cover; background-position: center; color: #fff; padding: 5rem 0; }
+        .brand-logo { height: 36px; }
+        .btn-primary { background-color: var(--brand); border-color: var(--brand); }
+        .btn-primary:hover { background-color: var(--accent); border-color: var(--accent); }
+        .btn-outline-danger { color: var(--brand); border-color: var(--brand); }
+        .card { border-radius: var(--card-radius); }
+        .sidebar .list-group-item { border: none; }
+        .card-header.bg-dark { background-color: var(--brand) !important; }
+        .nav-user { min-width: 220px; }
+        @@media (max-width: 767px) {
+            .sidebar { display: none; }
+            .sidebar-mobile { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" asp-page="/Index">
+                <img src="https://images.unsplash.com/photo-1564767609342-620cb19b2357?q=80&w=200&auto=format&fit=crop&ixlib=rb-4.0.3&s=" alt="Zoe" class="brand-logo me-2" />
+                <span class="fw-bold">Academia Zoe</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <li class="nav-item"><a class="nav-link" asp-page="/Index">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-page="/Public/Matriculate">Matricúlate</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-page="/Public/Materials">Materiales</a></li>
+
+                    @if (SignInManager?.IsSignedIn(User) ?? false)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                @User.Identity?.Name
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end nav-user" aria-labelledby="userMenu">
+                                <li><a class="dropdown-item" asp-page="/Account/Manage">Mi cuenta</a></li>
+                                <li><a class="dropdown-item" asp-page="/Account/Logout">Cerrar sesión</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-page="/Alumno/Dashboard">Panel alumno</a></li>
+                                <li><a class="dropdown-item" asp-page="/Tutor/Dashboard">Panel tutor</a></li>
+                                <li><a class="dropdown-item" asp-page="/Profesor/Dashboard">Panel profesor</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Dashboard">Panel admin</a></li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item"><a class="nav-link" asp-page="/Account/Login">Iniciar sesión</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container my-4">
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="bg-dark text-light mt-5">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Academia Zoe - Ayacucho</h5>
+                    <p class="small">Plataforma de gestión académica. Cursos, horarios, tutores y matrícula en línea.</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Enlaces</h6>
+                    <ul class="list-unstyled small">
+                        <li><a class="text-light text-decoration-none" asp-page="/Index">Inicio</a></li>
+                        <li><a class="text-light text-decoration-none" asp-page="/Public/Matriculate">Matricúlate</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    <small>© Academia Zoe Ayacucho</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
