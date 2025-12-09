@@ -454,7 +454,7 @@ public static class DbInitializer
             // Matriculas: only active students
             foreach (var a in alumnos.Where(x => x.IsActive))
             {
-                context.Matriculas.Add(new Matricula { Alumno = a, Ciclo = ciclo, Monto = 100m, Moneda = "PEN", EstadoPago = "Pagado", CreatedAt = DateTime.UtcNow });
+                context.Matriculas.Add(new Matricula { Alumno = a, Ciclo = ciclo, Monto = 100m, Moneda = "PEN", EstadoPago = EstadoPago.Pagado, CreatedAt = DateTime.UtcNow });
             }
 
             // Horarios per salon

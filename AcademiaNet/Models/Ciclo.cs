@@ -1,5 +1,12 @@
 namespace Academic.Models;
 
+public enum ModalidadCiclo
+{
+    Presencial = 0,
+    Virtual = 1,
+    Hibrido = 2
+}
+
 public sealed class Ciclo
 {
     public int Id { get; set; }
@@ -13,6 +20,9 @@ public sealed class Ciclo
     // Optional enrollment window (if null, use FechaInicio..FechaFin)
     public DateTime? MatriculaInicio { get; set; }
     public DateTime? MatriculaFin { get; set; }
+
+    // Modality of the ciclo (Presencial, Virtual, Hibrido)
+    public ModalidadCiclo Modalidad { get; set; } = ModalidadCiclo.Presencial;
 
     public List<Matricula> Matriculas { get; set; } = new();
 }

@@ -57,7 +57,7 @@ public class MaterialsModel : PageModel
             return;
         }
 
-        var hasMatricula = alumno.Matriculas.Any(m => m.CicloId == currentCiclo.Id && m.EstadoPago != "Cancelado");
+        var hasMatricula = alumno.Matriculas.Any(m => m.CicloId == currentCiclo.Id && m.EstadoPago != Academic.Models.EstadoPago.Cancelado);
         if (!hasMatricula)
         {
             NotAuthorizedMessage = "No estás matriculado en el ciclo activo; la biblioteca está disponible solo para alumnos matriculados.";

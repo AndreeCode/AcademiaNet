@@ -24,7 +24,8 @@ public class DashboardModel : PageModel
         var current = Ciclos.FirstOrDefault();
         if (current != null && current.Vacantes > 0)
         {
-            var count = await _context.Matriculas.CountAsync(m => m.CicloId == current.Id);
+            // count only matriculas pagadas to compute used vacancies
+            var count = await _context.Matriculas.CountAsync(m => m.CicloId == current.Id && m.EstadoPago == Academic.Models.EstadoPago.Pagado);
             VacantesDisponibles = Math.Max(0, current.Vacantes - count);
         }
     }

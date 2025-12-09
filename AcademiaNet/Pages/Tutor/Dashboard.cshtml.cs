@@ -105,7 +105,7 @@ public class DashboardModel : PageModel
         var ciclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
         if (ciclo != null)
         {
-            _context.Matriculas.Add(new Academic.Models.Matricula { Alumno = alumno, Ciclo = ciclo, Monto = 1m, Moneda = "PEN", EstadoPago = "Pendiente", CreatedAt = DateTime.UtcNow });
+            _context.Matriculas.Add(new Academic.Models.Matricula { Alumno = alumno, Ciclo = ciclo, Monto = 1m, Moneda = "PEN", EstadoPago = Academic.Models.EstadoPago.Pendiente, CreatedAt = DateTime.UtcNow });
             await _context.SaveChangesAsync();
         }
 

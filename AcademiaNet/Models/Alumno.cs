@@ -12,5 +12,18 @@ public sealed class Alumno
 
     public bool IsActive { get; set; } = true;
 
+    public DateTime? DateOfBirth { get; set; }
+
+    // Computed age (not mapped to DB explicitly)
+    public int? Age {
+        get {
+            if (!DateOfBirth.HasValue) return null;
+            var today = DateTime.UtcNow.Date;
+            var age = today.Year - DateOfBirth.Value.Date.Year;
+            if (DateOfBirth.Value.Date > today.AddYears(-age)) age--;
+            return age;
+        }
+    }
+
     public List<Matricula> Matriculas { get; set; } = new();
 }
