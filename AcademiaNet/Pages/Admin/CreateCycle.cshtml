@@ -1,0 +1,135 @@
+@page
+@model Academic.Pages.Admin.CreateCycleModel
+@{
+    ViewData["Title"] = "Crear Nuevo Ciclo";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-calendar-plus"></i> Crear Nuevo Ciclo Académico</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            @Model.StatusMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Nombre" class="form-label">Nombre del Ciclo *</label>
+                            <input asp-for="Input.Nombre" class="form-control" placeholder="Ej: Ciclo 2025-III" />
+                            <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.FechaInicio" class="form-label">Fecha Inicio Ciclo *</label>
+                                <input asp-for="Input.FechaInicio" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.FechaInicio" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.FechaFin" class="form-label">Fecha Fin Ciclo *</label>
+                                <input asp-for="Input.FechaFin" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.FechaFin" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h5 class="mb-3"><i class="bi bi-calendar-check"></i> Periodo de Matrícula</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.MatriculaInicio" class="form-label">Inicio Matrícula *</label>
+                                <input asp-for="Input.MatriculaInicio" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.MatriculaInicio" class="text-danger"></span>
+                                <small class="form-text text-muted">Debe ser antes del inicio del ciclo</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.MatriculaFin" class="form-label">Fin Matrícula *</label>
+                                <input asp-for="Input.MatriculaFin" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.MatriculaFin" class="text-danger"></span>
+                                <small class="form-text text-muted">Debe ser antes del inicio del ciclo</small>
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h5 class="mb-3"><i class="bi bi-gear"></i> Configuración</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.Vacantes" class="form-label">Número de Vacantes *</label>
+                                <input asp-for="Input.Vacantes" type="number" class="form-control" min="0" max="10000" />
+                                <span asp-validation-for="Input.Vacantes" class="text-danger"></span>
+                                <small class="form-text text-muted">0 = ilimitadas</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.Modalidad" class="form-label">Modalidad *</label>
+                                <select asp-for="Input.Modalidad" class="form-select">
+                                    <option value="0">Presencial</option>
+                                    <option value="1">Virtual</option>
+                                    <option value="2">Híbrido</option>
+                                </select>
+                                <span asp-validation-for="Input.Modalidad" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.MontoMatricula" class="form-label">Monto de Matrícula (PEN) *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">S/</span>
+                                <input asp-for="Input.MontoMatricula" type="number" class="form-control" min="1.00" step="0.01" value="1.00" />
+                            </div>
+                            <span asp-validation-for="Input.MontoMatricula" class="text-danger"></span>
+                            <small class="form-text text-muted">Monto que pagará cada estudiante al matricularse (por defecto S/ 1.00)</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Nota:</strong> Al crear el ciclo, se generarán automáticamente las semanas correspondientes basadas en la duración del ciclo.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a asp-page="/Admin/Dashboard" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Crear Ciclo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <h6><i class="bi bi-lightbulb"></i> Recomendaciones</h6>
+                    <ul class="mb-0 small">
+                        <li>El periodo de matrícula debe abrir antes del inicio del ciclo</li>
+                        <li>Se recomienda cerrar la matrícula al menos 3 días antes del inicio del ciclo</li>
+                        <li>Para modalidad Presencial, establezca el número exacto de vacantes</li>
+                        <li>Para modalidad Virtual, puede establecer 0 vacantes (ilimitadas)</li>
+                        <li>Las semanas se crearán automáticamente (una semana = 7 días)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+<style>
+    .card-header.bg-primary { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

@@ -13,6 +13,12 @@ public sealed class Alumno
     public bool IsActive { get; set; } = true;
 
     public DateTime? DateOfBirth { get; set; }
+    
+    public string? Telefono { get; set; }
+    public string? Direccion { get; set; }
+    public string? DNI { get; set; }
+    public string? NombreApoderado { get; set; }
+    public string? TelefonoApoderado { get; set; }
 
     // Computed age (not mapped to DB explicitly)
     public int? Age {

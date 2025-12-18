@@ -15,6 +15,7 @@ public sealed class AcademicContext : IdentityDbContext
     public DbSet<Alumno> Alumnos => Set<Alumno>();
     public DbSet<Curso> Cursos => Set<Curso>();
     public DbSet<Ciclo> Ciclos => Set<Ciclo>();
+    public DbSet<Semana> Semanas => Set<Semana>();
     public DbSet<Matricula> Matriculas => Set<Matricula>();
     public DbSet<Horario> Horarios => Set<Horario>();
     public DbSet<TutorSalon> TutorSalones => Set<TutorSalon>();
@@ -40,8 +41,9 @@ public sealed class AcademicContext : IdentityDbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // decimal precision for Matricula.Monto
+        // decimal precision for Matricula.Monto and PaidAmount
         modelBuilder.Entity<Matricula>().Property(m => m.Monto).HasPrecision(18, 2);
+        modelBuilder.Entity<Matricula>().Property(m => m.PaidAmount).HasPrecision(18, 2);
 
         // Additional model configuration can go here
     }

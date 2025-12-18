@@ -2,80 +2,268 @@
 @model Academic.Pages.Admin.DashboardModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Panel de Administración";
+}
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 
 <div class="row">
-    <div class="col-md-3 sidebar">
+    <div class="col-md-3">
         <div class="card shadow-sm mb-3">
             <div class="card-body text-center">
-                <h5 class="mb-0">Administrador</h5>
-                <small class="text-muted">Panel</small>
+                <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-dashboard mb-2" onerror="this.style.display='none'" style="max-width: 100px; height: auto;" />
+                <i class="bi bi-shield-check" style="font-size: 3rem; color: #800020;"></i>
+                <h5 class="mb-0 mt-2">Administrador</h5>
+                <small class="text-muted">Panel de Control</small>
             </div>
             <div class="list-group list-group-flush">
-                <a class="list-group-item list-group-item-action active" href="#">Resumen</a>
-                <a class="list-group-item list-group-item-action" asp-page="/Admin/Dashboard">Ciclos</a>
-                <a class="list-group-item list-group-item-action" asp-page="/Admin/ManageTutors">Tutores</a>
+                <a class="list-group-item list-group-item-action active" asp-page="/Admin/Dashboard">
+                    <i class="bi bi-speedometer2"></i> Resumen
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/CreateCycle">
+                    <i class="bi bi-calendar-plus"></i> Crear Ciclo
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/CreateTutor">
+                    <i class="bi bi-person-plus"></i> Crear Tutor
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Materiales/Index">
+                    <i class="bi bi-folder"></i> Materiales
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Semanas/Gestionar">
+                    <i class="bi bi-calendar-week"></i> Gestionar Semanas
+                </a>
             </div>
         </div>
     </div>
 
     <div class="col-md-9">
         <div class="card shadow-sm mb-3">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Panel Admin</h4>
-                <div>
-                    <a class="btn btn-primary" asp-page="/Admin/CreateCycle">Crear Ciclo</a>
-                    <a class="btn btn-outline-secondary" asp-page="/Admin/CreateTutor">Crear Tutor</a>
+            <div class="card-body">
+                <h4 class="mb-3"><i class="bi bi-bar-chart"></i> Panel de Administración</h4>
+                
+                <!-- Estadísticas Rápidas -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-primary">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">@Model.TotalAlumnos</div>
+                                <div class="stat-label">Total Alumnos</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-success">
+                                <i class="bi bi-clipboard-check"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">@Model.TotalMatriculas</div>
+                                <div class="stat-label">Matrículas</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-warning">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">@Model.MatriculasPendientes</div>
+                                <div class="stat-label">Pendientes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-info">
+                                <i class="bi bi-door-open"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">
+                                    @(Model.CicloActual?.Vacantes == 0 ? "?" : Model.VacantesDisponibles.ToString())
+                                </div>
+                                <div class="stat-label">Vacantes</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Ciclo Actual -->
+                @if (Model.CicloActual != null)
+                {
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-calendar-event"></i> Ciclo Actual: @Model.CicloActual.Nombre</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Modalidad:</strong> @Model.CicloActual.Modalidad</p>
+                                    <p class="mb-1"><strong>Fecha Inicio:</strong> @Model.CicloActual.FechaInicio.ToString("dd/MM/yyyy")</p>
+                                    <p class="mb-1"><strong>Fecha Fin:</strong> @Model.CicloActual.FechaFin.ToString("dd/MM/yyyy")</p>
+                                </div>
+                                <div class="col-md-6">
+                                    @if (Model.CicloActual.MatriculaInicio.HasValue && Model.CicloActual.MatriculaFin.HasValue)
+                                    {
+                                        var now = DateTime.UtcNow;
+                                        var isOpen = now >= Model.CicloActual.MatriculaInicio && now <= Model.CicloActual.MatriculaFin;
+                                        
+                                        <p class="mb-1"><strong>Matrícula:</strong> 
+                                            <span class="badge @(isOpen ? "bg-success" : "bg-secondary")">
+                                                @(isOpen ? "ABIERTA" : "CERRADA")
+                                            </span>
+                                        </p>
+                                        <p class="mb-1"><strong>Inicio Matrícula:</strong> @Model.CicloActual.MatriculaInicio.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                                        <p class="mb-1"><strong>Fin Matrícula:</strong> @Model.CicloActual.MatriculaFin.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="mb-1"><strong>Matrícula:</strong> <span class="badge bg-warning">No configurada</span></p>
+                                        <a asp-page="/Admin/CreateCycle" class="btn btn-sm btn-warning">Configurar Fechas</a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
 
         <div class="row g-3">
             <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-dark text-white">Ciclos</div>
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-calendar"></i> Ciclos Registrados</span>
+                        <a asp-page="/Admin/CreateCycle" class="btn btn-sm btn-light">
+                            <i class="bi bi-plus"></i> Nuevo
+                        </a>
+                    </div>
                     <div class="card-body">
-                        <table class="table table-sm">
-                            <thead><tr><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Vacantes</th></tr></thead>
-                            <tbody>
-                                @foreach (var c in Model.Ciclos)
-                                {
-                                    <tr>
-                                        <td>@c.Nombre</td>
-                                        <td>@c.FechaInicio.ToShortDateString()</td>
-                                        <td>@c.FechaFin.ToShortDateString()</td>
-                                        <td>@c.Vacantes</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        @if (Model.Ciclos.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Inicio</th>
+                                            <th>Vacantes</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var c in Model.Ciclos.Take(5))
+                                        {
+                                            var isActive = DateTime.UtcNow >= c.FechaInicio && DateTime.UtcNow <= c.FechaFin;
+                                            <tr>
+                                                <td><strong>@c.Nombre</strong></td>
+                                                <td>@c.FechaInicio.ToString("dd/MM/yyyy")</td>
+                                                <td>@(c.Vacantes == 0 ? "?" : c.Vacantes.ToString())</td>
+                                                <td>
+                                                    <span class="badge @(isActive ? "bg-success" : "bg-secondary")">
+                                                        @(isActive ? "Activo" : "Inactivo")
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-center text-muted py-4">
+                                <i class="bi bi-calendar-x" style="font-size: 3rem;"></i><br />
+                                No hay ciclos registrados
+                            </p>
+                        }
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-dark text-white">Tutores</div>
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people"></i> Tutores</span>
+                        <a asp-page="/Admin/CreateTutor" class="btn btn-sm btn-light">
+                            <i class="bi bi-plus"></i> Nuevo
+                        </a>
+                    </div>
                     <div class="card-body">
-                        <table class="table table-sm">
-                            <thead><tr><th>Nombre</th><th>Email</th></tr></thead>
-                            <tbody>
-                                @foreach (var t in Model.Tutores)
-                                {
-                                    <tr>
-                                        <td>@t.Nombre @t.Apellido</td>
-                                        <td>@t.Email</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        @if (Model.Tutores.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var t in Model.Tutores.Take(5))
+                                        {
+                                            <tr>
+                                                <td><strong>@t.Nombre @t.Apellido</strong></td>
+                                                <td><small>@t.Email</small></td>
+                                                <td>
+                                                    <span class="badge @(t.IsActive ? "bg-success" : "bg-secondary")">
+                                                        @(t.IsActive ? "Activo" : "Inactivo")
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-center text-muted py-4">
+                                <i class="bi bi-person-x" style="font-size: 3rem;"></i><br />
+                                No hay tutores registrados
+                            </p>
+                        }
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="card shadow-sm mt-3">
-                    <div class="card-header bg-dark text-white">Vacantes</div>
+        <div class="row g-3 mt-1">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <i class="bi bi-gear"></i> Acciones Rápidas
+                    </div>
                     <div class="card-body">
-                        <p>Vacantes disponibles: <strong>@Model.VacantesDisponibles</strong></p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <a asp-page="/Materiales/Index" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-folder"></i><br />
+                                    Gestionar Materiales
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a asp-page="/Semanas/Gestionar" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-calendar-week"></i><br />
+                                    Gestionar Semanas
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a asp-page="/Public/Matriculate" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-eye"></i><br />
+                                    Ver Página de Matrícula
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -85,4 +273,43 @@
 
 <style>
     .card-header.bg-dark { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+    .list-group-item.active { background-color: #800020; border-color: #800020; }
+    .btn-outline-primary { color: #800020; border-color: #800020; }
+    .btn-outline-primary:hover { background-color: #800020; border-color: #800020; color: white; }
+    
+    .stat-card {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon.bg-primary { background-color: #800020 !important; }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #666;
+    }
 </style>

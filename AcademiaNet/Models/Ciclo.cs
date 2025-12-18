@@ -24,5 +24,9 @@ public sealed class Ciclo
     // Modality of the ciclo (Presencial, Virtual, Hibrido)
     public ModalidadCiclo Modalidad { get; set; } = ModalidadCiclo.Presencial;
 
+    // Monto de matrícula para este ciclo (por defecto 1.00 PEN)
+    public decimal MontoMatricula { get; set; } = 1.00m;
+
     public List<Matricula> Matriculas { get; set; } = new();
+    public List<Semana> Semanas { get; set; } = new();
 }

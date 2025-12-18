@@ -1,0 +1,201 @@
+@page
+@model Academic.Pages.Semanas.GestionarModel
+@{
+    ViewData["Title"] = "Gestionar Semanas";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-calendar-week"></i> Gestionar Semanas por Ciclo</h2>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Materiales/Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a Materiales
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @Model.StatusMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Crear Nueva Semana</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.CicloId" class="form-label">Ciclo</label>
+                            <select asp-for="Input.CicloId" asp-items="Model.CiclosList" class="form-select">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                            <span asp-validation-for="Input.CicloId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.NumeroSemana" class="form-label">Número de Semana</label>
+                            <input asp-for="Input.NumeroSemana" type="number" class="form-control" min="1" max="52" />
+                            <span asp-validation-for="Input.NumeroSemana" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.FechaInicio" class="form-label">Fecha Inicio</label>
+                            <input asp-for="Input.FechaInicio" type="date" class="form-control" />
+                            <span asp-validation-for="Input.FechaInicio" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.FechaFin" class="form-label">Fecha Fin</label>
+                            <input asp-for="Input.FechaFin" type="date" class="form-control" />
+                            <span asp-validation-for="Input.FechaFin" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Tema" class="form-label">Tema</label>
+                            <input asp-for="Input.Tema" class="form-control" placeholder="Ej: Introducción al Álgebra" />
+                            <span asp-validation-for="Input.Tema" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Descripcion" class="form-label">Descripción</label>
+                            <textarea asp-for="Input.Descripcion" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Crear Semana
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.SelectedCicloId.HasValue)
+            {
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Generar Semanas Automáticamente</h6>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" asp-page-handler="GenerateWeeks">
+                            <input type="hidden" name="cicloId" value="@Model.SelectedCicloId" />
+                            <div class="mb-3">
+                                <label class="form-label">Número de semanas a generar</label>
+                                <input type="number" name="numWeeks" class="form-control" min="1" max="52" value="12" />
+                                <small class="text-muted">Solo se crearán semanas que no existan</small>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100">
+                                <i class="bi bi-magic"></i> Generar Automáticamente
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Semanas Registradas</h5>
+                    @if (Model.CiclosList.Any())
+                    {
+                        <form method="get" class="d-inline">
+                            <select name="cicloId" class="form-select form-select-sm" onchange="this.form.submit()" style="width: auto;">
+                                <option value="">-- Seleccione un ciclo --</option>
+                                @foreach (var item in Model.CiclosList)
+                                {
+                                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                }
+                            </select>
+                        </form>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (Model.Semanas.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Semana</th>
+                                        <th>Tema</th>
+                                        <th>Fechas</th>
+                                        <th>Materiales</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var semana in Model.Semanas)
+                                    {
+                                        <tr>
+                                            <td><strong>Semana @semana.NumeroSemana</strong></td>
+                                            <td>
+                                                @semana.Tema
+                                                @if (!string.IsNullOrEmpty(semana.Descripcion))
+                                                {
+                                                    <br /><small class="text-muted">@semana.Descripcion</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    @semana.FechaInicio.ToString("dd/MM/yyyy") -
+                                                    @semana.FechaFin.ToString("dd/MM/yyyy")
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@semana.Materiales.Count materiales</span>
+                                            </td>
+                                            <td>
+                                                <form method="post" asp-page-handler="Delete" asp-route-id="@semana.Id" class="d-inline"
+                                                      onsubmit="return confirm('¿Está seguro de eliminar esta semana?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            disabled="@(semana.Materiales.Any())" title="@(semana.Materiales.Any() ? "No se puede eliminar: tiene materiales" : "Eliminar")">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else if (Model.SelectedCicloId.HasValue)
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-calendar-x" style="font-size: 4rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">No hay semanas creadas para este ciclo.</p>
+                            <p class="small text-muted">Use el formulario de la izquierda para crear semanas manualmente o genere automáticamente.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-arrow-up-circle" style="font-size: 4rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">Seleccione un ciclo para ver sus semanas.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+<style>
+    .card-header.bg-dark { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

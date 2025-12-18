@@ -1,0 +1,114 @@
+@page
+@model Academic.Pages.Admin.EditCycleModel
+@{
+    ViewData["Title"] = "Editar Ciclo";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Ciclo: @Model.Ciclo?.Nombre</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            @Model.StatusMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post">
+                        <input type="hidden" asp-for="Input.Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Nombre" class="form-label">Nombre del Ciclo *</label>
+                            <input asp-for="Input.Nombre" class="form-control" />
+                            <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.FechaInicio" class="form-label">Fecha Inicio Ciclo *</label>
+                                <input asp-for="Input.FechaInicio" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.FechaInicio" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.FechaFin" class="form-label">Fecha Fin Ciclo *</label>
+                                <input asp-for="Input.FechaFin" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.FechaFin" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h5 class="mb-3"><i class="bi bi-calendar-check"></i> Periodo de Matrícula</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.MatriculaInicio" class="form-label">Inicio Matrícula *</label>
+                                <input asp-for="Input.MatriculaInicio" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.MatriculaInicio" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.MatriculaFin" class="form-label">Fin Matrícula *</label>
+                                <input asp-for="Input.MatriculaFin" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="Input.MatriculaFin" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h5 class="mb-3"><i class="bi bi-gear"></i> Configuración</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.Vacantes" class="form-label">Número de Vacantes *</label>
+                                <input asp-for="Input.Vacantes" type="number" class="form-control" min="0" max="10000" />
+                                <span asp-validation-for="Input.Vacantes" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.Modalidad" class="form-label">Modalidad *</label>
+                                <select asp-for="Input.Modalidad" class="form-select">
+                                    <option value="0">Presencial</option>
+                                    <option value="1">Virtual</option>
+                                    <option value="2">Híbrido</option>
+                                </select>
+                                <span asp-validation-for="Input.Modalidad" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.MontoMatricula" class="form-label">Monto de Matrícula (PEN) *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">S/</span>
+                                <input asp-for="Input.MontoMatricula" type="number" class="form-control" min="1.00" step="0.01" />
+                            </div>
+                            <span asp-validation-for="Input.MontoMatricula" class="text-danger"></span>
+                            <small class="form-text text-muted">Monto que pagará cada estudiante al matricularse</small>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Advertencia:</strong> Cambiar las fechas de matrícula puede afectar el proceso de inscripción en curso.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a asp-page="/Admin/Dashboard" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

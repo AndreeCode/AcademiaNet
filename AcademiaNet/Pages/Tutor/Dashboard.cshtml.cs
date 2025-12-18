@@ -4,6 +4,7 @@ using Academic.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Academic.Models;
 
 namespace Academic.Pages.Tutor;
 
@@ -12,15 +13,18 @@ public class DashboardModel : PageModel
 {
     private readonly AcademicContext _context;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly ILogger<DashboardModel> _logger;
 
-    public DashboardModel(AcademicContext context, UserManager<IdentityUser> userManager)
+    public DashboardModel(AcademicContext context, UserManager<IdentityUser> userManager, ILogger<DashboardModel> logger)
     {
         _context = context;
         _userManager = userManager;
+        _logger = logger;
     }
 
     public Academic.Models.Tutor? Tutor { get; set; }
     public List<Academic.Models.Salon> Salones { get; set; } = new();
+    public List<Matricula> MatriculasPendientes { get; set; } = new();
 
     [BindProperty]
     public string NewStudentEmail { get; set; } = string.Empty;
@@ -29,7 +33,6 @@ public class DashboardModel : PageModel
     [BindProperty]
     public string NewStudentApellido { get; set; } = string.Empty;
 
-    // Material creation properties
     [BindProperty]
     public string NewMaterialTitle { get; set; } = string.Empty;
     [BindProperty]
@@ -37,16 +40,17 @@ public class DashboardModel : PageModel
     [BindProperty]
     public int NewMaterialWeek { get; set; } = 1;
 
+    [TempData]
+    public string? StatusMessage { get; set; }
+
     public async Task OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return;
 
-        // find tutor by email
         Tutor = await _context.Tutores.FirstOrDefaultAsync(t => t.Email == user.Email);
         if (Tutor == null)
         {
-            // still try to load salones by matching Tutor email via TutorSalones join
             Salones = await _context.Salones
                 .Where(s => s.TutorSalones.Any(ts => ts.Tutor != null && ts.Tutor.Email == user.Email))
                 .Include(s => s.Sede)
@@ -57,13 +61,21 @@ public class DashboardModel : PageModel
             return;
         }
 
-        // load salones by Tutor.Id but also include join by email as fallback
         Salones = await _context.Salones
             .Where(s => s.TutorSalones.Any(ts => ts.TutorId == Tutor.Id) || s.TutorSalones.Any(ts => ts.Tutor != null && ts.Tutor.Email == Tutor.Email))
             .Include(s => s.Sede)
             .Include(s => s.Alumnos)
             .Include(s => s.Horarios)
             .Include(s => s.Materiales)
+            .ToListAsync();
+
+        // Cargar matrículas pendientes de los alumnos en los salones del tutor
+        var salonIds = Salones.Select(s => s.Id).ToList();
+        MatriculasPendientes = await _context.Matriculas
+            .Include(m => m.Alumno)
+            .Include(m => m.Ciclo)
+            .Where(m => m.EstadoPago == EstadoPago.Pendiente && m.Alumno.SalonId.HasValue && salonIds.Contains(m.Alumno.SalonId.Value))
+            .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
     }
 
@@ -76,39 +88,49 @@ public class DashboardModel : PageModel
             return Page();
         }
 
-        // create domain Alumno
-        var alumno = new Academic.Models.Alumno { Nombre = NewStudentNombre, Apellido = NewStudentApellido, Email = NewStudentEmail, SalonId = salonId };
+        var alumno = new Academic.Models.Alumno 
+        { 
+            Nombre = NewStudentNombre, 
+            Apellido = NewStudentApellido, 
+            Email = NewStudentEmail, 
+            SalonId = salonId 
+        };
         _context.Alumnos.Add(alumno);
         await _context.SaveChangesAsync();
 
-        // create Identity user for the student if not exists
         var existing = await _userManager.FindByEmailAsync(NewStudentEmail);
         if (existing == null)
         {
             var identityUser = new IdentityUser { UserName = NewStudentEmail, Email = NewStudentEmail, EmailConfirmed = true };
-            var defaultPassword = "Alumno123!"; // development default
+            var defaultPassword = "Alumno123!";
 
             var createResult = await _userManager.CreateAsync(identityUser, defaultPassword);
             if (!createResult.Succeeded)
             {
-                // do not block domain creation, but inform in ModelState
-                ModelState.AddModelError(string.Empty, "No se pudo crear la cuenta de acceso para el alumno. Revisa el email o la configuración de Identity.");
+                ModelState.AddModelError(string.Empty, "No se pudo crear la cuenta de acceso para el alumno.");
                 await OnGetAsync();
                 return Page();
             }
 
-            // add role
             await _userManager.AddToRoleAsync(identityUser, "Alumno");
         }
 
-        // assign matricula to current ciclo
         var ciclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
         if (ciclo != null)
         {
-            _context.Matriculas.Add(new Academic.Models.Matricula { Alumno = alumno, Ciclo = ciclo, Monto = 1m, Moneda = "PEN", EstadoPago = Academic.Models.EstadoPago.Pendiente, CreatedAt = DateTime.UtcNow });
+            _context.Matriculas.Add(new Academic.Models.Matricula 
+            { 
+                Alumno = alumno, 
+                Ciclo = ciclo, 
+                Monto = ciclo.MontoMatricula, 
+                Moneda = "PEN", 
+                EstadoPago = EstadoPago.Pendiente, 
+                CreatedAt = DateTime.UtcNow 
+            });
             await _context.SaveChangesAsync();
         }
 
+        StatusMessage = $"Alumno {NewStudentNombre} creado exitosamente.";
         return RedirectToPage();
     }
 
@@ -117,20 +139,12 @@ public class DashboardModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Forbid();
 
-        // ensure tutor loaded
         Tutor = await _context.Tutores.FirstOrDefaultAsync(t => t.Email == user.Email);
         if (Tutor == null)
         {
-            // try to locate tutor by identity email and create minimal domain entry if missing
-            var t = await _context.Tutores.FirstOrDefaultAsync(x => x.Email == user.Email);
-            if (t == null)
-            {
-                // cannot create material without tutor domain entry
-                ModelState.AddModelError(string.Empty, "No se encontró el perfil de tutor.");
-                await OnGetAsync();
-                return Page();
-            }
-            Tutor = t;
+            ModelState.AddModelError(string.Empty, "No se encontró el perfil de tutor.");
+            await OnGetAsync();
+            return Page();
         }
 
         if (string.IsNullOrWhiteSpace(NewMaterialTitle))
@@ -148,7 +162,6 @@ public class DashboardModel : PageModel
             return Page();
         }
 
-        // optional: ensure tutor is assigned to this salon
         var isAssigned = await _context.TutorSalones.AnyAsync(ts => ts.SalonId == salonId && (ts.TutorId == Tutor.Id || (ts.Tutor != null && ts.Tutor.Email == Tutor.Email)));
         if (!isAssigned)
         {
@@ -172,6 +185,75 @@ public class DashboardModel : PageModel
 
         _context.Materiales.Add(material);
         await _context.SaveChangesAsync();
+
+        StatusMessage = "Material creado exitosamente.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostAprobarMatriculaAsync(int matriculaId)
+    {
+        var matricula = await _context.Matriculas
+            .Include(m => m.Alumno)
+            .FirstOrDefaultAsync(m => m.Id == matriculaId);
+
+        if (matricula == null)
+        {
+            StatusMessage = "Matrícula no encontrada.";
+            return RedirectToPage();
+        }
+
+        matricula.EstadoPago = EstadoPago.Pagado;
+        matricula.FechaPago = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Tutor aprobó matrícula {MatriculaId} para alumno {Alumno}", matriculaId, matricula.Alumno.Email);
+        StatusMessage = $"Matrícula de {matricula.Alumno.Nombre} {matricula.Alumno.Apellido} aprobada exitosamente.";
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRechazarMatriculaAsync(int matriculaId)
+    {
+        var matricula = await _context.Matriculas
+            .Include(m => m.Alumno)
+            .FirstOrDefaultAsync(m => m.Id == matriculaId);
+
+        if (matricula == null)
+        {
+            StatusMessage = "Matrícula no encontrada.";
+            return RedirectToPage();
+        }
+
+        matricula.EstadoPago = EstadoPago.Cancelado;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Tutor rechazó matrícula {MatriculaId} para alumno {Alumno}", matriculaId, matricula.Alumno.Email);
+        StatusMessage = $"Matrícula de {matricula.Alumno.Nombre} {matricula.Alumno.Apellido} rechazada.";
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostCambiarSalonAlumnoAsync(int alumnoId, int nuevoSalonId)
+    {
+        var alumno = await _context.Alumnos.FindAsync(alumnoId);
+        if (alumno == null)
+        {
+            StatusMessage = "Alumno no encontrado.";
+            return RedirectToPage();
+        }
+
+        var salon = await _context.Salones.FindAsync(nuevoSalonId);
+        if (salon == null)
+        {
+            StatusMessage = "Salón no encontrado.";
+            return RedirectToPage();
+        }
+
+        alumno.SalonId = nuevoSalonId;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Alumno {Alumno} cambiado al salón {Salon}", alumno.Email, salon.Nombre);
+        StatusMessage = $"Alumno {alumno.Nombre} {alumno.Apellido} movido al salón {salon.Nombre}.";
 
         return RedirectToPage();
     }

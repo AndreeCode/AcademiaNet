@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Identity;
 using Academic.Data;
@@ -25,6 +26,9 @@ public class DashboardModel : PageModel
     public Salon? Salon { get; set; }
     public Sede? Sede { get; set; }
 
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
     public async Task OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -43,6 +47,7 @@ public class DashboardModel : PageModel
         Matriculas = await _context.Matriculas
             .Where(m => m.AlumnoId == CurrentAlumno.Id)
             .Include(m => m.Ciclo)
+            .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
 
         Salon = CurrentAlumno.Salon;

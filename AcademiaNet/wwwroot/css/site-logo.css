@@ -1,0 +1,85 @@
+/* 
+ * Estilos del Logo - Academia Zoe
+ * Archivo: site-logo.css
+ */
+
+/* Logo en Navbar */
+.brand-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Logo en Login */
+.logo-login {
+    max-width: 150px;
+    height: auto;
+    display: block;
+    margin: 0 auto 2rem;
+}
+
+/* Logo en Dashboard */
+.logo-dashboard {
+    max-width: 100px;
+    height: auto;
+    display: block;
+    margin: 0 auto 1rem;
+}
+
+/* Logo en Hero (Matrícula) */
+.logo-hero {
+    max-width: 120px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Logo en Footer */
+.logo-footer {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .brand-logo {
+        height: 32px;
+    }
+    
+    .logo-login {
+        max-width: 120px;
+    }
+    
+    .logo-dashboard {
+        max-width: 80px;
+    }
+    
+    .logo-hero {
+        max-width: 100px;
+    }
+    
+    .logo-footer {
+        height: 50px;
+    }
+}
+
+/* Animación sutil al cargar */
+.brand-logo,
+.logo-login,
+.logo-dashboard,
+.logo-hero,
+.logo-footer {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

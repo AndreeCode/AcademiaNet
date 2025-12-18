@@ -1,0 +1,126 @@
+@page
+@model Academic.Pages.Materiales.SubirModel
+@{
+    ViewData["Title"] = "Subir Material";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0"><i class="bi bi-upload"></i> Subir Material</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            @Model.StatusMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Title" class="form-label">Título del Material</label>
+                            <input asp-for="Input.Title" class="form-control" placeholder="Ej: Guía de ejercicios - Álgebra" />
+                            <span asp-validation-for="Input.Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Description" class="form-label">Descripción</label>
+                            <textarea asp-for="Input.Description" class="form-control" rows="3" placeholder="Descripción breve del material"></textarea>
+                            <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.CicloId" class="form-label">Ciclo</label>
+                                <select asp-for="Input.CicloId" asp-items="Model.CiclosList" class="form-select">
+                                    <option value="">-- Seleccione un ciclo --</option>
+                                </select>
+                                <span asp-validation-for="Input.CicloId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.SemanaId" class="form-label">Semana</label>
+                                <select asp-for="Input.SemanaId" asp-items="Model.SemanasList" class="form-select">
+                                    <option value="">-- Seleccione una semana --</option>
+                                </select>
+                                <span asp-validation-for="Input.SemanaId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.TipoMaterial" class="form-label">Tipo de Material</label>
+                            <select asp-for="Input.TipoMaterial" asp-items="Model.TipoMaterialList" class="form-select" id="tipoMaterialSelect">
+                                <option value="">-- Seleccione tipo --</option>
+                            </select>
+                            <span asp-validation-for="Input.TipoMaterial" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3" id="fileUploadSection">
+                            <label asp-for="Input.File" class="form-label">Archivo</label>
+                            <input asp-for="Input.File" type="file" class="form-control" accept=".pdf,.doc,.docx,.txt,.mp4,.avi,.mov" />
+                            <small class="form-text text-muted">Tamaño máximo: 100MB. Formatos: PDF, DOC, DOCX, TXT, MP4, AVI, MOV</small>
+                        </div>
+
+                        <div class="mb-3" id="urlSection" style="display:none;">
+                            <label asp-for="Input.Url" class="form-label">URL del Enlace</label>
+                            <input asp-for="Input.Url" type="url" class="form-control" placeholder="https://ejemplo.com/recurso" />
+                            <span asp-validation-for="Input.Url" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-page="/Materiales/Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Subir Material
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle"></i> Información</h6>
+                    <ul class="mb-0 small">
+                        <li>Los archivos se organizan automáticamente por ciclo y semana</li>
+                        <li>Cada tipo de material tiene su propia carpeta (PDFs, Videos, Documentos)</li>
+                        <li>Solo usuarios con rol Admin, Tutor o Coordinador pueden subir materiales</li>
+                        <li>Para enlaces externos, seleccione "Enlace" como tipo de material</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('tipoMaterialSelect').addEventListener('change', function() {
+            var tipoMaterial = parseInt(this.value);
+            var fileSection = document.getElementById('fileUploadSection');
+            var urlSection = document.getElementById('urlSection');
+            
+            // 3 = Enlace
+            if (tipoMaterial === 3) {
+                fileSection.style.display = 'none';
+                urlSection.style.display = 'block';
+            } else {
+                fileSection.style.display = 'block';
+                urlSection.style.display = 'none';
+            }
+        });
+    </script>
+}
+
+<style>
+    .card-header.bg-dark { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

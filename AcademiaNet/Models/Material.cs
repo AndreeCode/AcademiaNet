@@ -1,5 +1,14 @@
 namespace Academic.Models;
 
+public enum TipoMaterial
+{
+    PDF = 0,
+    Video = 1,
+    Documento = 2,
+    Enlace = 3,
+    Otro = 4
+}
+
 public sealed class Material
 {
     public int Id { get; set; }
@@ -14,7 +23,14 @@ public sealed class Material
     public int? CicloId { get; set; }
     public Ciclo? Ciclo { get; set; }
 
+    public int? SemanaId { get; set; }
+    public Semana? Semana { get; set; }
+
     public string? FileUrl { get; set; }
+    public string? FileName { get; set; }
+    public long? FileSize { get; set; }
+    public TipoMaterial TipoMaterial { get; set; } = TipoMaterial.Documento;
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // link to salon and tutor who owns/created material

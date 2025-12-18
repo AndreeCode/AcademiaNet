@@ -1,0 +1,135 @@
+@page
+@model Academic.Pages.Alumno.ConfiguracionModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Configuración del Perfil";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body text-center">
+                <img src="https://ui-avatars.com/api/?name=@(Model.Input.Nombre)%20@(Model.Input.Apellido)&background=800020&color=fff&size=128" class="rounded-circle mb-2" alt="avatar" />
+                <h5 class="mb-0">@Model.Input.Nombre @Model.Input.Apellido</h5>
+                <small class="text-muted">Alumno</small>
+            </div>
+            <div class="list-group list-group-flush">
+                <a class="list-group-item list-group-item-action" asp-page="/Alumno/Dashboard">Resumen</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Public/Materials">Biblioteca</a>
+                <a class="list-group-item list-group-item-action active" asp-page="/Alumno/Configuracion">Configuración</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Account/Manage">Mi cuenta</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Account/Logout">Cerrar sesión</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">Configuración del Perfil</h4>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                {
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        @Model.StatusMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.Nombre" class="form-label"></label>
+                            <input asp-for="Input.Nombre" class="form-control" />
+                            <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.Apellido" class="form-label"></label>
+                            <input asp-for="Input.Apellido" class="form-control" />
+                            <span asp-validation-for="Input.Apellido" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.DNI" class="form-label"></label>
+                            <input asp-for="Input.DNI" class="form-control" placeholder="Ej: 12345678" />
+                            <span asp-validation-for="Input.DNI" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.DateOfBirth" class="form-label"></label>
+                            <input asp-for="Input.DateOfBirth" class="form-control" type="date" />
+                            <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.Telefono" class="form-label"></label>
+                            <input asp-for="Input.Telefono" class="form-control" placeholder="Ej: 987654321" />
+                            <span asp-validation-for="Input.Telefono" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.Direccion" class="form-label"></label>
+                            <input asp-for="Input.Direccion" class="form-control" placeholder="Ej: Av. Principal 123, Lima" />
+                            <span asp-validation-for="Input.Direccion" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+                    <h5 class="mb-3">Información del Apoderado</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.NombreApoderado" class="form-label"></label>
+                            <input asp-for="Input.NombreApoderado" class="form-control" placeholder="Nombre completo del apoderado" />
+                            <span asp-validation-for="Input.NombreApoderado" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.TelefonoApoderado" class="form-label"></label>
+                            <input asp-for="Input.TelefonoApoderado" class="form-control" placeholder="Ej: 987654321" />
+                            <span asp-validation-for="Input.TelefonoApoderado" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Guardar Cambios
+                        </button>
+                        <a asp-page="/Alumno/Dashboard" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Información Importante</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Mantén tu información actualizada para recibir comunicados importantes.</li>
+                    <li>El DNI y fecha de nacimiento son necesarios para trámites académicos.</li>
+                    <li>La información del apoderado será utilizada para contacto en caso de emergencia.</li>
+                    <li>Para cambiar tu correo electrónico o contraseña, ve a <a asp-page="/Account/Manage">Mi cuenta</a>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+<style>
+    .card-header.bg-dark { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+    .list-group-item.active { background-color: #800020; border-color: #800020; }
+</style>

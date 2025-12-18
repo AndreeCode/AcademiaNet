@@ -5,18 +5,44 @@
     ViewData["Title"] = "Panel del estudiante";
 }
 
+<!-- Modal de bienvenida/éxito -->
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="successModalLabel">
+                        <i class="bi bi-check-circle-fill"></i> ¡Bienvenido!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center py-3">
+                        <i class="bi bi-mortarboard-fill text-success" style="font-size: 4rem;"></i>
+                        <p class="mt-3">@Model.SuccessMessage</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="row">
     <div class="col-md-3">
         <div class="card shadow-sm mb-3">
             <div class="card-body text-center">
-                <img src="https://ui-avatars.com/api/?name=@(Model.CurrentAlumno?.Nombre)%20@(Model.CurrentAlumno?.Apellido)&background=800020&color=fff&size=128" class="rounded-circle mb-2" alt="avatar" />
-                <h5 class="mb-0">@Model.CurrentAlumno?.Nombre @Model.CurrentAlumno?.Apellido</h5>
-                <small class="text-muted">Alumno</small>
+                <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-dashboard mb-2" onerror="this.style.display='none'" style="max-width: 80px; height: auto;" />
+                <h5 class="mb-0">@(Model.CurrentAlumno?.Nombre ?? "Estudiante") @(Model.CurrentAlumno?.Apellido ?? "")</h5>
+                <small class="text-muted">Estudiante</small>
             </div>
             <div class="list-group list-group-flush">
                 <a class="list-group-item list-group-item-action active" href="#">Resumen</a>
                 <a class="list-group-item list-group-item-action" asp-page="/Public/Materials">Biblioteca</a>
-                <a class="list-group-item list-group-item-action" asp-page="/Account/Manage">Mi cuenta</a>
+                <a class="list-group-item list-group-item-action" asp-page="/Alumno/Configuracion">Configuración</a>
                 <a class="list-group-item list-group-item-action" asp-page="/Account/Logout">Cerrar sesión</a>
             </div>
         </div>
@@ -42,7 +68,7 @@
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
                     <h4 class="mb-0">Panel del estudiante</h4>
-                    <small class="text-muted">Ciclo activo: <strong>Ciclo 2025-II</strong></small>
+                    <small class="text-muted">Bienvenido de nuevo, @Model.CurrentAlumno?.Nombre</small>
                 </div>
                 <div>
                     <a class="btn btn-outline-secondary me-2" asp-page="/Public/Matriculate">Matrícula</a>
@@ -64,11 +90,13 @@
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <strong>@m.Ciclo?.Nombre</strong><br />
-                                            <small class="text-muted">@m.EstadoPago</small>
+                                            <span class="badge @(m.EstadoPago == Academic.Models.EstadoPago.Pagado ? "bg-success" : m.EstadoPago == Academic.Models.EstadoPago.Pendiente ? "bg-warning" : "bg-danger")">
+                                                @m.EstadoPago
+                                            </span>
                                         </div>
                                         <div class="text-end">
                                             <div>@m.Monto.ToString("C")</div>
-                                            <small class="text-muted">@m.CreatedAt.ToString("g")</small>
+                                            <small class="text-muted">@m.CreatedAt.ToString("dd/MM/yyyy")</small>
                                         </div>
                                     </li>
                                 }
@@ -76,7 +104,11 @@
                         }
                         else
                         {
-                            <p>No tienes matrículas registradas.</p>
+                            <div class="text-center py-4">
+                                <i class="bi bi-clipboard-x text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">No tienes matrículas registradas.</p>
+                                <a asp-page="/Public/Matriculate" class="btn btn-sm btn-primary">Matricularme ahora</a>
+                            </div>
                         }
                     </div>
                 </div>
@@ -133,7 +165,20 @@
     </div>
 </div>
 
+@section Scripts {
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+            });
+        </script>
+    }
+}
+
 <style>
     .card-header.bg-dark { background-color: #800020 !important; }
     .btn-primary { background-color: #800020; border-color: #800020; }
+    .list-group-item.active { background-color: #800020; border-color: #800020; }
 </style>

@@ -31,8 +31,11 @@ public static class DbInitializer
         try
         {
             await EnsureCicloColumnsAsync(context, logger);
+            await EnsureMatriculaColumnsAsync(context, logger);
             await EnsureTutorColumnsAsync(context, logger);
             await EnsureAlumnoColumnsAsync(context, logger);
+            await EnsureAlumnoProfileColumnsAsync(context, logger);
+            await EnsureSemanaTableAsync(context, logger);
             await EnsureMaterialesTableAsync(context, logger);
             await EnsureMaterialesColumnsAsync(context, logger);
         }
@@ -64,6 +67,13 @@ public static class DbInitializer
         {
             // add non-nullable with default 0
             addCommands.Add("ALTER TABLE [Ciclos] ADD [Vacantes] int NOT NULL CONSTRAINT DF_Ciclos_Vacantes DEFAULT(0);");
+        }
+
+        var hasMontoMatricula = await ColumnExistsAsync(context, "Ciclos", "MontoMatricula");
+        if (!hasMontoMatricula)
+        {
+            // add non-nullable with default 1.00
+            addCommands.Add("ALTER TABLE [Ciclos] ADD [MontoMatricula] decimal(18,2) NOT NULL CONSTRAINT DF_Ciclos_MontoMatricula DEFAULT(1.00);");
         }
 
         if (addCommands.Count == 0) return;
@@ -112,6 +122,60 @@ public static class DbInitializer
             logger?.LogInformation("Executing schema fix: {Cmd}", cmd);
             await context.Database.ExecuteSqlRawAsync(cmd);
         }
+    }
+
+    private static async Task EnsureAlumnoProfileColumnsAsync(AcademicContext context, ILogger? logger)
+    {
+        var addCommands = new List<string>();
+
+        var hasTelefono = await ColumnExistsAsync(context, "Alumnos", "Telefono");
+        if (!hasTelefono)
+            addCommands.Add("ALTER TABLE [Alumnos] ADD [Telefono] nvarchar(20) NULL;");
+
+        var hasDireccion = await ColumnExistsAsync(context, "Alumnos", "Direccion");
+        if (!hasDireccion)
+            addCommands.Add("ALTER TABLE [Alumnos] ADD [Direccion] nvarchar(200) NULL;");
+
+        var hasDNI = await ColumnExistsAsync(context, "Alumnos", "DNI");
+        if (!hasDNI)
+            addCommands.Add("ALTER TABLE [Alumnos] ADD [DNI] nvarchar(20) NULL;");
+
+        var hasNombreApoderado = await ColumnExistsAsync(context, "Alumnos", "NombreApoderado");
+        if (!hasNombreApoderado)
+            addCommands.Add("ALTER TABLE [Alumnos] ADD [NombreApoderado] nvarchar(150) NULL;");
+
+        var hasTelefonoApoderado = await ColumnExistsAsync(context, "Alumnos", "TelefonoApoderado");
+        if (!hasTelefonoApoderado)
+            addCommands.Add("ALTER TABLE [Alumnos] ADD [TelefonoApoderado] nvarchar(20) NULL;");
+
+        if (addCommands.Count == 0) return;
+
+        foreach (var cmd in addCommands)
+        {
+            logger?.LogInformation("Executing schema fix: {Cmd}", cmd);
+            await context.Database.ExecuteSqlRawAsync(cmd);
+        }
+    }
+
+    private static async Task EnsureSemanaTableAsync(AcademicContext context, ILogger? logger)
+    {
+        var tableExists = await TableExistsAsync(context, "Semanas");
+        if (tableExists) return;
+
+        logger?.LogInformation("Semanas table missing — creating table.");
+
+        var createSql = @"CREATE TABLE [Semanas](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [NumeroSemana] INT NOT NULL,
+    [CicloId] INT NOT NULL,
+    [FechaInicio] DATETIME2 NOT NULL,
+    [FechaFin] DATETIME2 NOT NULL,
+    [Tema] NVARCHAR(200) NULL,
+    [Descripcion] NVARCHAR(MAX) NULL,
+    [IsActive] BIT NOT NULL DEFAULT(1),
+    CONSTRAINT FK_Semanas_Ciclos FOREIGN KEY (CicloId) REFERENCES [Ciclos](Id) ON DELETE CASCADE
+);";
+        await context.Database.ExecuteSqlRawAsync(createSql);
     }
 
     private static async Task EnsureMaterialesTableAsync(AcademicContext context, ILogger? logger)
@@ -173,6 +237,22 @@ public static class DbInitializer
         if (!hasCreatedById)
             addCommands.Add("ALTER TABLE [Materiales] ADD [CreatedById] int NULL;");
 
+        var hasSemanaId = await ColumnExistsAsync(context, "Materiales", "SemanaId");
+        if (!hasSemanaId)
+            addCommands.Add("ALTER TABLE [Materiales] ADD [SemanaId] int NULL;");
+
+        var hasFileName = await ColumnExistsAsync(context, "Materiales", "FileName");
+        if (!hasFileName)
+            addCommands.Add("ALTER TABLE [Materiales] ADD [FileName] nvarchar(500) NULL;");
+
+        var hasFileSize = await ColumnExistsAsync(context, "Materiales", "FileSize");
+        if (!hasFileSize)
+            addCommands.Add("ALTER TABLE [Materiales] ADD [FileSize] bigint NULL;");
+
+        var hasTipoMaterial = await ColumnExistsAsync(context, "Materiales", "TipoMaterial");
+        if (!hasTipoMaterial)
+            addCommands.Add("ALTER TABLE [Materiales] ADD [TipoMaterial] int NOT NULL DEFAULT(2);");
+
         if (addCommands.Count == 0) return;
 
         foreach (var cmd in addCommands)
@@ -194,10 +274,58 @@ public static class DbInitializer
                 var fkTutor = "IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Materiales_Tutores') ALTER TABLE [Materiales] ADD CONSTRAINT FK_Materiales_Tutores FOREIGN KEY (TutorId) REFERENCES [Tutores](Id) ON DELETE SET NULL;";
                 await context.Database.ExecuteSqlRawAsync(fkTutor);
             }
+            if (await TableExistsAsync(context, "Semanas"))
+            {
+                var fkSemana = "IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Materiales_Semanas') ALTER TABLE [Materiales] ADD CONSTRAINT FK_Materiales_Semanas FOREIGN KEY (SemanaId) REFERENCES [Semanas](Id) ON DELETE SET NULL;";
+                await context.Database.ExecuteSqlRawAsync(fkSemana);
+            }
         }
         catch (Exception ex)
         {
             logger?.LogWarning(ex, "Could not add foreign keys for new Materiales columns; continuing.");
+        }
+    }
+
+    private static async Task EnsureMatriculaColumnsAsync(AcademicContext context, ILogger? logger)
+    {
+        var addCommands = new List<string>();
+
+        var hasMercadoPagoInitPoint = await ColumnExistsAsync(context, "Matriculas", "MercadoPagoInitPoint");
+        if (!hasMercadoPagoInitPoint)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [MercadoPagoInitPoint] nvarchar(500) NULL;");
+        }
+
+        var hasMercadoPagoPreferenceId = await ColumnExistsAsync(context, "Matriculas", "MercadoPagoPreferenceId");
+        if (!hasMercadoPagoPreferenceId)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [MercadoPagoPreferenceId] nvarchar(200) NULL;");
+        }
+
+        var hasMercadoPagoPaymentId = await ColumnExistsAsync(context, "Matriculas", "MercadoPagoPaymentId");
+        if (!hasMercadoPagoPaymentId)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [MercadoPagoPaymentId] nvarchar(200) NULL;");
+        }
+
+        var hasFechaPago = await ColumnExistsAsync(context, "Matriculas", "FechaPago");
+        if (!hasFechaPago)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [FechaPago] datetime2 NULL;");
+        }
+
+        var hasPaidAmount = await ColumnExistsAsync(context, "Matriculas", "PaidAmount");
+        if (!hasPaidAmount)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [PaidAmount] decimal(18,2) NULL;");
+        }
+
+        if (addCommands.Count == 0) return;
+
+        foreach (var cmd in addCommands)
+        {
+            logger?.LogInformation("Executing schema fix: {Cmd}", cmd);
+            await context.Database.ExecuteSqlRawAsync(cmd);
         }
     }
 
@@ -346,11 +474,33 @@ public static class DbInitializer
             var ciclo = new Ciclo
             {
                 Nombre = "Ciclo 2025-II",
-                FechaInicio = new DateTime(2025, 8, 1),
-                FechaFin = new DateTime(2025, 12, 31),
-                Vacantes = 100
+                FechaInicio = DateTime.UtcNow.AddDays(30),  // Inicia en 30 días
+                FechaFin = DateTime.UtcNow.AddDays(150),     // Termina en 150 días (aprox 5 meses)
+                Vacantes = 100,
+                MatriculaInicio = DateTime.UtcNow.AddDays(-5),  // Matrícula abierta desde hace 5 días
+                MatriculaFin = DateTime.UtcNow.AddDays(25),     // Matrícula cierra en 25 días
+                Modalidad = ModalidadCiclo.Hibrido,
+                MontoMatricula = 1.00m  // Monto por defecto
             };
             context.Ciclos.Add(ciclo);
+            await context.SaveChangesAsync();
+
+            // Crear semanas para el ciclo (12 semanas)
+            for (int i = 1; i <= 12; i++)
+            {
+                var semana = new Semana
+                {
+                    NumeroSemana = i,
+                    CicloId = ciclo.Id,
+                    FechaInicio = ciclo.FechaInicio.AddDays((i - 1) * 7),
+                    FechaFin = ciclo.FechaInicio.AddDays(i * 7 - 1),
+                    Tema = $"Semana {i}",
+                    Descripcion = $"Contenido de la semana {i}",
+                    IsActive = true
+                };
+                context.Semanas.Add(semana);
+            }
+            await context.SaveChangesAsync();
 
             var sede = new Sede { Nombre = "Zoe - Ayacucho", Direccion = "Calle Ficticia 123" };
             var sede2 = new Sede { Nombre = "Zoe - Huamanga", Direccion = "Av. Principal 456" };
@@ -467,12 +617,65 @@ public static class DbInitializer
             );
 
             // Materials: each salon gets materials per week, tied to tutor and salon and course
-            for (int w = 1; w <= 12; w++)
+            var semanas = await context.Semanas.Where(s => s.CicloId == ciclo.Id).ToListAsync();
+            foreach (var semana in semanas)
             {
-                context.Materiales.Add(new Material { Title = $"Semana {w} - Matemáticas ({salon1.Nombre})", Description = "Apuntes y ejercicios.", Week = w, Curso = prof1.Cursos.FirstOrDefault() ?? null, Ciclo = ciclo, FileUrl = null, Salon = salon1, Tutor = tutor1, CreatedAt = DateTime.UtcNow });
-                context.Materiales.Add(new Material { Title = $"Semana {w} - Matemáticas ({salon2.Nombre})", Description = "Apuntes y ejercicios adicionales.", Week = w, Curso = prof1.Cursos.FirstOrDefault() ?? null, Ciclo = ciclo, FileUrl = null, Salon = salon2, Tutor = tutor1, CreatedAt = DateTime.UtcNow });
-                context.Materiales.Add(new Material { Title = $"Semana {w} - Física ({salon3.Nombre})", Description = "Apuntes y laboratorio.", Week = w, Curso = prof2.Cursos.FirstOrDefault() ?? null, Ciclo = ciclo, FileUrl = null, Salon = salon3, Tutor = tutor2, CreatedAt = DateTime.UtcNow });
-                context.Materiales.Add(new Material { Title = $"Semana {w} - Física ({salon4.Nombre})", Description = "Ejercicios y guías.", Week = w, Curso = prof2.Cursos.FirstOrDefault() ?? null, Ciclo = ciclo, FileUrl = null, Salon = salon4, Tutor = tutor2, CreatedAt = DateTime.UtcNow });
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Semana {semana.NumeroSemana} - Matemáticas ({salon1.Nombre})", 
+                    Description = "Apuntes y ejercicios.", 
+                    Week = semana.NumeroSemana,
+                    SemanaId = semana.Id,
+                    Curso = prof1.Cursos.FirstOrDefault() ?? null, 
+                    Ciclo = ciclo, 
+                    FileUrl = null, 
+                    Salon = salon1, 
+                    Tutor = tutor1,
+                    TipoMaterial = TipoMaterial.Documento,
+                    CreatedAt = DateTime.UtcNow 
+                });
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Semana {semana.NumeroSemana} - Matemáticas ({salon2.Nombre})", 
+                    Description = "Apuntes y ejercicios adicionales.", 
+                    Week = semana.NumeroSemana,
+                    SemanaId = semana.Id,
+                    Curso = prof1.Cursos.FirstOrDefault() ?? null, 
+                    Ciclo = ciclo, 
+                    FileUrl = null, 
+                    Salon = salon2, 
+                    Tutor = tutor1,
+                    TipoMaterial = TipoMaterial.Documento,
+                    CreatedAt = DateTime.UtcNow 
+                });
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Semana {semana.NumeroSemana} - Física ({salon3.Nombre})", 
+                    Description = "Apuntes y laboratorio.", 
+                    Week = semana.NumeroSemana,
+                    SemanaId = semana.Id,
+                    Curso = prof2.Cursos.FirstOrDefault() ?? null, 
+                    Ciclo = ciclo, 
+                    FileUrl = null, 
+                    Salon = salon3, 
+                    Tutor = tutor2,
+                    TipoMaterial = TipoMaterial.Documento,
+                    CreatedAt = DateTime.UtcNow 
+                });
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Semana {semana.NumeroSemana} - Física ({salon4.Nombre})", 
+                    Description = "Ejercicios y guías.", 
+                    Week = semana.NumeroSemana,
+                    SemanaId = semana.Id,
+                    Curso = prof2.Cursos.FirstOrDefault() ?? null, 
+                    Ciclo = ciclo, 
+                    FileUrl = null, 
+                    Salon = salon4, 
+                    Tutor = tutor2,
+                    TipoMaterial = TipoMaterial.Documento,
+                    CreatedAt = DateTime.UtcNow 
+                });
             }
 
             await context.SaveChangesAsync();
@@ -596,5 +799,4 @@ public static class DbInitializer
             logger?.LogWarning(ex, "Failed to ensure tutors domain data");
         }
     }
-
 }

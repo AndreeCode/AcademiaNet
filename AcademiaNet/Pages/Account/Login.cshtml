@@ -2,25 +2,36 @@
 @model Academic.Pages.Account.LoginModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Iniciar Sesión";
 }
 
 <div class="row justify-content-center">
     <div class="col-md-5">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h3 class="mb-3">Iniciar sesión</h3>
+                <div class="text-center mb-4">
+                    <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-login" onerror="this.src='https://via.placeholder.com/150x150/E30613/FFFFFF?text=ACADEMIA+ZOE'" />
+                </div>
+                <h3 class="mb-3 text-center">Iniciar sesión</h3>
                 <partial name="_ValidationSummary" />
                 <form method="post">
                     <div class="mb-3">
                         <label class="form-label">Correo</label>
-                        <input asp-for="Input.Email" class="form-control" />
+                        <input asp-for="Input.Email" class="form-control" placeholder="tu@email.com" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Contraseña</label>
-                        <input asp-for="Input.Password" class="form-control" type="password" />
+                        <input asp-for="Input.Password" class="form-control" type="password" placeholder="Tu contraseña" />
                     </div>
-                    <button class="btn btn-primary w-100" type="submit">Entrar</button>
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-box-arrow-in-right"></i> Entrar
+                    </button>
                 </form>
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        ¿No tienes cuenta? <a asp-page="/Public/Matriculate" class="text-decoration-none">Matricúlate aquí</a>
+                    </small>
+                </div>
             </div>
         </div>
     </div>
@@ -28,4 +39,11 @@
 
 <style>
     .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+    .logo-login {
+        max-width: 150px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
 </style>

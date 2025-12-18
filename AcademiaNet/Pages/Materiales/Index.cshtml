@@ -1,0 +1,153 @@
+@page
+@model Academic.Pages.Materiales.IndexModel
+@{
+    ViewData["Title"] = "Gestión de Materiales";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-folder"></i> Gestión de Materiales</h2>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Materiales/Subir" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Subir Material
+            </a>
+            <a asp-page="/Semanas/Gestionar" class="btn btn-secondary">
+                <i class="bi bi-calendar-week"></i> Gestionar Semanas
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @Model.StatusMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="search" value="@Model.SearchQuery" class="form-control" placeholder="Buscar por título o descripción..." />
+                </div>
+                <div class="col-md-4">
+                    <select name="cicloId" class="form-select">
+                        <option value="">Todos los ciclos</option>
+                        @foreach (var ciclo in Model.Ciclos)
+                        {
+                            <option value="@ciclo.Id" selected="@(Model.FilterCicloId == ciclo.Id)">@ciclo.Nombre</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @if (Model.Materiales.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Ciclo</th>
+                                <th>Semana</th>
+                                <th>Tipo</th>
+                                <th>Tamaño</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var material in Model.Materiales)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@material.Title</strong>
+                                        @if (!string.IsNullOrEmpty(material.Description))
+                                        {
+                                            <br /><small class="text-muted">@material.Description</small>
+                                        }
+                                    </td>
+                                    <td>@material.Ciclo?.Nombre</td>
+                                    <td>
+                                        @if (material.Semana != null)
+                                        {
+                                            <span>Semana @material.Semana.NumeroSemana</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@material.TipoMaterial</span>
+                                    </td>
+                                    <td>@Model.GetFileSizeString(material.FileSize)</td>
+                                    <td>
+                                        <small>@material.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        @if (material.TipoMaterial == Academic.Models.TipoMaterial.Enlace)
+                                        {
+                                            <a href="@material.FileUrl" target="_blank" class="btn btn-sm btn-outline-primary" title="Abrir enlace">
+                                                <i class="bi bi-link-45deg"></i>
+                                            </a>
+                                        }
+                                        else if (!string.IsNullOrEmpty(material.FileUrl))
+                                        {
+                                            <a href="/files/@material.FileUrl" target="_blank" class="btn btn-sm btn-outline-primary" title="Descargar">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        }
+                                        <form method="post" asp-page-handler="Delete" asp-route-id="@material.Id" class="d-inline" onsubmit="return confirm('¿Está seguro de eliminar este material?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-folder-x" style="font-size: 4rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No se encontraron materiales.</p>
+                    <a asp-page="/Materiales/Subir" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Subir primer material
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-body">
+            <h6><i class="bi bi-info-circle"></i> Información del Sistema de Archivos</h6>
+            <p class="mb-0 small">
+                <strong>Ruta de almacenamiento:</strong> FileStorage/<br />
+                <strong>Estructura:</strong> [Ciclo]/Semana_XX/[TipoMaterial]/[Archivo]<br />
+                <strong>Ejemplo:</strong> FileStorage/Ciclo_2025-II/Semana_01/PDFs/guid_documento.pdf
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

@@ -2,48 +2,399 @@
 @model Academic.Pages.Public.MatriculateModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Matrícula - Academia Zoe";
 }
 
-<section class="hero text-center">
+<section class="hero text-center py-5" style="background: linear-gradient(135deg, #800020 0%, #b30030 100%); color: white;">
     <div class="container">
-        <h1 class="display-5 fw-bold">Matricúlate en Academia Zoe</h1>
+        <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-hero mb-3" onerror="this.style.display='none'" style="max-width: 120px; height: auto;" />
+        <h1 class="display-4 fw-bold">Matricúlate en Academia Zoe</h1>
         <p class="lead">Inscríbete al próximo ciclo y accede a tutorías, recursos y clases en vivo.</p>
+        <p class="fst-italic">Sueña, Decide e Ingresa</p>
+        @if (Model.CurrentCiclo != null)
+        {
+            <div class="badge bg-light text-dark fs-6 mt-2">
+                <i class="bi bi-calendar-event"></i> @Model.CurrentCiclo.Nombre
+            </div>
+            <div class="badge bg-success fs-6 mt-2 ms-2">
+                <i class="bi bi-cash"></i> S/ @Model.CurrentCiclo.MontoMatricula.ToString("N2")
+            </div>
+        }
     </div>
 </section>
 
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-7">
-            <div class="card shadow-sm">
+        <div class="col-lg-8">
+            <!-- Información del ciclo -->
+            @if (Model.CurrentCiclo != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-info-circle"></i> Información del Ciclo</h5>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <p><strong>Ciclo:</strong> @Model.CurrentCiclo.Nombre</p>
+                                <p><strong>Modalidad:</strong> @Model.CurrentCiclo.Modalidad</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Fecha Inicio:</strong> @Model.CurrentCiclo.FechaInicio.ToString("dd/MM/yyyy")</p>
+                                <p><strong>Fecha Fin:</strong> @Model.CurrentCiclo.FechaFin.ToString("dd/MM/yyyy")</p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.MatriculaMensaje))
+                        {
+                            <div class="alert alert-info mb-0 mt-2">
+                                <i class="bi bi-info-circle-fill"></i> @Model.MatriculaMensaje
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Mensajes de error o éxito -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> 
+                    <strong>Error de Matrícula:</strong><br/>
+                    @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Formulario de matrícula -->
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Formulario de Matriculación</h4>
+                </div>
                 <div class="card-body">
-                    <h4 class="mb-3">Formulario de matriculación</h4>
-                    <form method="post">
-                        <div class="row gx-2">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Nombre</label>
-                                <input asp-for="Input.Nombre" class="form-control form-control-lg" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Apellido</label>
-                                <input asp-for="Input.Apellido" class="form-control form-control-lg" />
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Correo Electrónico</label>
-                                <input asp-for="Input.Email" class="form-control form-control-lg" />
-                            </div>
-                            <div class="col-12 mb-3 form-check">
-                                <input asp-for="Input.AcceptTerms" class="form-check-input" />
-                                <label class="form-check-label">Acepto términos y políticas</label>
-                            </div>
-                        </div>
+                    @if (Model.MatriculaAbierta)
+                    {
+                        <form method="post" id="matriculaForm">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                        <div class="d-grid">
-                            <button class="btn btn-primary btn-lg">Matricular y Pagar</button>
-                        </div>
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Información:</strong> Crea una contraseña segura para tu cuenta. Te servirá para acceder al sistema.
+                            </div>
 
-                    </form>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Input.Nombre" class="form-label">Nombre *</label>
+                                    <input asp-for="Input.Nombre" class="form-control form-control-lg" placeholder="Ej: Juan" autocomplete="given-name" />
+                                    <span asp-validation-for="Input.Nombre" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Input.Apellido" class="form-label">Apellido *</label>
+                                    <input asp-for="Input.Apellido" class="form-control form-control-lg" placeholder="Ej: Pérez" autocomplete="family-name" />
+                                    <span asp-validation-for="Input.Apellido" class="text-danger small"></span>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label asp-for="Input.DNI" class="form-label">DNI *</label>
+                                    <input asp-for="Input.DNI" type="text" class="form-control form-control-lg text-uppercase" 
+                                           placeholder="12345678 o A1234567" maxlength="20" autocomplete="off" />
+                                    <small class="form-text text-muted">Documento de identidad</small>
+                                    <span asp-validation-for="Input.DNI" class="text-danger small"></span>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label asp-for="Input.Telefono" class="form-label">Teléfono</label>
+                                    <input asp-for="Input.Telefono" type="tel" class="form-control form-control-lg" 
+                                           placeholder="987654321" autocomplete="tel" />
+                                    <small class="form-text text-muted">Opcional</small>
+                                    <span asp-validation-for="Input.Telefono" class="text-danger small"></span>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label asp-for="Input.Email" class="form-label">Correo Electrónico *</label>
+                                    <input asp-for="Input.Email" type="email" class="form-control form-control-lg" 
+                                           placeholder="tu@email.com" autocomplete="email" />
+                                    <small class="form-text text-muted">Este será tu usuario para acceder al sistema</small>
+                                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label asp-for="Input.Password" class="form-label">Contraseña *</label>
+                                    <input asp-for="Input.Password" type="password" class="form-control form-control-lg" 
+                                           placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+                                    <small class="form-text text-muted">Mínimo 6 caracteres, incluye mayúsculas y minúsculas</small>
+                                    <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label asp-for="Input.ConfirmPassword" class="form-label">Confirmar Contraseña *</label>
+                                    <input asp-for="Input.ConfirmPassword" type="password" class="form-control form-control-lg" 
+                                           placeholder="Repite tu contraseña" autocomplete="new-password" />
+                                    <small class="form-text text-muted">Debe coincidir con la contraseña</small>
+                                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label asp-for="Input.Direccion" class="form-label">Dirección</label>
+                                    <input asp-for="Input.Direccion" class="form-control form-control-lg" 
+                                           placeholder="Av. Principal 123" autocomplete="street-address" />
+                                    <small class="form-text text-muted">Opcional</small>
+                                    <span asp-validation-for="Input.Direccion" class="text-danger small"></span>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input asp-for="Input.AcceptTerms" class="form-check-input" id="acceptTerms" />
+                                        <label for="acceptTerms" class="form-check-label">
+                                            Acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">términos y condiciones</a> *
+                                        </label>
+                                    </div>
+                                    <span asp-validation-for="Input.AcceptTerms" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <a href="/" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-check-circle"></i> Completar Matrícula
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>Matrícula no disponible</strong><br />
+                            @Model.MatriculaMensaje
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-house"></i> Volver al inicio
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-lightbulb"></i> ¿Qué incluye la matrícula?</h6>
+                    <ul class="mb-0">
+                        <li>Acceso a materiales de estudio por semana</li>
+                        <li>Clases en vivo con profesores especializados</li>
+                        <li>Tutoría personalizada</li>
+                        <li>Biblioteca de recursos digitales</li>
+                        <li>Certificado al finalizar el ciclo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-shield-check"></i> Información de Seguridad</h6>
+                    <ul class="mb-0 small">
+                        <li><strong>Crea una contraseña segura</strong> - Mínimo 6 caracteres con mayúsculas y minúsculas</li>
+                        <li>Tu DNI puede tener letras y números (Ej: 12345678 o A1234567)</li>
+                        <li>Tu email será tu nombre de usuario para acceder al sistema</li>
+                        <li>Guarda tu contraseña en un lugar seguro</li>
+                        <li>Nunca compartas tu contraseña con terceros</li>
+                        <li>Podrás cambiar tu contraseña desde tu perfil después de iniciar sesión</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal de Términos y Condiciones -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="termsModalLabel">
+                    <i class="bi bi-file-text"></i> Términos y Condiciones - Academia Zoe
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Aceptación de Términos</h6>
+                <p>Al matricularse en Academia Zoe, usted acepta cumplir con todos los términos y condiciones establecidos en este documento.</p>
+
+                <h6>2. Responsabilidades del Estudiante</h6>
+                <p>El estudiante se compromete a:</p>
+                <ul>
+                    <li>Asistir puntualmente a las clases programadas según el horario asignado</li>
+                    <li>Completar las tareas y evaluaciones asignadas en los plazos establecidos</li>
+                    <li>Mantener un comportamiento respetuoso con profesores, tutores y compañeros</li>
+                    <li>Cumplir con los pagos establecidos en las fechas indicadas</li>
+                    <li>Mantener actualizados sus datos de contacto</li>
+                </ul>
+
+                <h6>3. Proceso de Matrícula</h6>
+                <p>Al completar este formulario:</p>
+                <ul>
+                    <li>Se creará automáticamente una cuenta de usuario con tu email</li>
+                    <li>Tu contraseña inicial será tu número de DNI</li>
+                    <li>Recibirás acceso inmediato al sistema una vez completada la matrícula</li>
+                    <li>Es tu responsabilidad cambiar la contraseña en el primer inicio de sesión</li>
+                </ul>
+
+                <h6>4. Política de Pagos</h6>
+                <ul>
+                    <li>El pago de la matrícula debe realizarse en las fechas establecidas</li>
+                    <li>La mora en los pagos puede resultar en la suspensión de acceso a los servicios</li>
+                    <li>Los pagos son por ciclo completo</li>
+                    <li>Métodos de pago: transferencia bancaria, efectivo en sede, pago en línea</li>
+                </ul>
+
+                <h6>5. Privacidad de Datos</h6>
+                <p>Sus datos personales serán tratados de acuerdo con nuestra política de privacidad:</p>
+                <ul>
+                    <li>Solo serán utilizados para fines académicos y administrativos</li>
+                    <li>No serán compartidos con terceros sin su consentimiento</li>
+                    <li>Se almacenarán de forma segura en nuestra base de datos</li>
+                    <li>Usted puede solicitar la actualización o eliminación de sus datos</li>
+                </ul>
+
+                <h6>6. Cancelaciones y Reembolsos</h6>
+                <ul>
+                    <li>Las solicitudes de cancelación deben realizarse dentro de los primeros 7 días del inicio del ciclo</li>
+                    <li>Reembolso del 100% si la cancelación es antes del inicio del ciclo</li>
+                    <li>Reembolso del 50% si la cancelación es dentro de los primeros 7 días del ciclo</li>
+                    <li>No hay reembolsos después de los primeros 7 días del ciclo</li>
+                </ul>
+
+                <h6>7. Asistencia y Evaluaciones</h6>
+                <ul>
+                    <li>Se requiere un mínimo de 75% de asistencia para aprobar el ciclo</li>
+                    <li>Las evaluaciones son obligatorias en las fechas programadas</li>
+                    <li>Las inasistencias injustificadas pueden afectar la nota final</li>
+                    <li>El certificado se entrega solo si se cumplen todos los requisitos</li>
+                </ul>
+
+                <h6>8. Código de Conducta</h6>
+                <p>Todo estudiante debe:</p>
+                <ul>
+                    <li>Respetar a profesores, tutores y compañeros</li>
+                    <li>No plagiar ni copiar trabajos</li>
+                    <li>Mantener un ambiente de aprendizaje positivo</li>
+                    <li>Cuidar las instalaciones y materiales de la academia</li>
+                    <li>Seguir las normas de convivencia establecidas</li>
+                </ul>
+
+                <h6>9. Modificaciones</h6>
+                <p>Academia Zoe se reserva el derecho de modificar estos términos y condiciones. 
+                   Los cambios serán notificados a través del correo electrónico registrado.</p>
+
+                <h6>10. Contacto</h6>
+                <p>Para cualquier consulta sobre estos términos, puede contactarnos en:</p>
+                <ul>
+                    <li>Email: info@academiazoe.edu.pe</li>
+                    <li>Teléfono: (066) 123-4567</li>
+                    <li>Dirección: Av. Principal 123, Ayacucho</li>
+                </ul>
+
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    Al hacer clic en "Acepto los términos y condiciones" y completar la matrícula, 
+                    usted confirma que ha leído, entendido y aceptado todos los puntos anteriores.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="document.getElementById('acceptTerms').checked = true;">
+                    <i class="bi bi-check-circle"></i> Acepto los Términos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Validación DNI: letras mayúsculas y números, convertir a mayúsculas automáticamente
+        document.querySelector('input[name="Input.DNI"]').addEventListener('input', function (e) {
+            // Convertir a mayúsculas y filtrar solo letras y números
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 20);
+        });
+
+        // Tooltip de Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        // Validación del formulario antes de enviar
+        document.getElementById('matriculaForm')?.addEventListener('submit', function(e) {
+            var dni = document.querySelector('input[name="Input.DNI"]').value;
+            var password = document.querySelector('input[name="Input.Password"]').value;
+            var confirmPassword = document.querySelector('input[name="Input.ConfirmPassword"]').value;
+            var acceptTerms = document.getElementById('acceptTerms').checked;
+
+            if (dni.length < 8) {
+                e.preventDefault();
+                alert('El DNI debe tener al menos 8 caracteres.');
+                return false;
+            }
+
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('La contraseña debe tener al menos 6 caracteres.');
+                return false;
+            }
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden.');
+                return false;
+            }
+
+            if (!acceptTerms) {
+                e.preventDefault();
+                alert('Debe aceptar los términos y condiciones para continuar.');
+                return false;
+            }
+        });
+
+        // Mostrar/ocultar contraseña
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+    </script>
+}
+
+<style>
+    .hero {
+        background: linear-gradient(135deg, #800020 0%, #b30030 100%);
+    }
+    .btn-primary {
+        background-color: #800020;
+        border-color: #800020;
+    }
+    .btn-primary:hover {
+        background-color: #660019;
+        border-color: #660019;
+    }
+    .card-header.bg-primary {
+        background-color: #800020 !important;
+    }
+    .modal-header.bg-primary {
+        background-color: #800020 !important;
+    }
+    .form-control:focus {
+        border-color: #800020;
+        box-shadow: 0 0 0 0.2rem rgba(128, 0, 32, 0.25);
+    }
+</style>

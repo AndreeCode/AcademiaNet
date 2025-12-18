@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Academic.Data;
 using Academic.Services;
 using Academic.Models;
 using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Configuration;
 
 namespace Academic.Pages.Public;
 
@@ -13,19 +16,70 @@ public sealed class MatriculateModel : PageModel
     private readonly AcademicContext _context;
     private readonly MercadoPagoService _mpService;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly ILogger<MatriculateModel> _logger;
+    private readonly IConfiguration _configuration;
 
-    public MatriculateModel(AcademicContext context, MercadoPagoService mpService, UserManager<IdentityUser> userManager)
+    public MatriculateModel(
+        AcademicContext context, 
+        MercadoPagoService mpService, 
+        UserManager<IdentityUser> userManager,
+        SignInManager<IdentityUser> signInManager,
+        ILogger<MatriculateModel> logger,
+        IConfiguration configuration)
     {
         _context = context;
         _mpService = mpService;
         _userManager = userManager;
+        _signInManager = signInManager;
+        _logger = logger;
+        _configuration = configuration;
     }
 
     public class InputModel
     {
+        [Required(ErrorMessage = "El nombre es requerido")]
+        [StringLength(100, ErrorMessage = "El nombre no puede exceder 100 caracteres")]
+        [Display(Name = "Nombre")]
         public string Nombre { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El apellido es requerido")]
+        [StringLength(100, ErrorMessage = "El apellido no puede exceder 100 caracteres")]
+        [Display(Name = "Apellido")]
         public string Apellido { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El DNI es requerido")]
+        [StringLength(20, MinimumLength = 8, ErrorMessage = "El DNI debe tener entre 8 y 20 caracteres")]
+        [RegularExpression(@"^[A-Z0-9]{8,20}$", ErrorMessage = "El DNI debe contener solo letras mayúsculas y números (8-20 caracteres)")]
+        [Display(Name = "DNI")]
+        public string DNI { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La contraseña es requerida")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "La contraseña debe tener entre 6 y 100 caracteres")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Contraseña")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Debe confirmar la contraseña")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "Las contraseñas no coinciden")]
+        [Display(Name = "Confirmar Contraseña")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [StringLength(20, ErrorMessage = "El teléfono no puede exceder 20 caracteres")]
+        [Display(Name = "Teléfono (Opcional)")]
+        public string? Telefono { get; set; }
+
+        [StringLength(200, ErrorMessage = "La dirección no puede exceder 200 caracteres")]
+        [Display(Name = "Dirección (Opcional)")]
+        public string? Direccion { get; set; }
+
+        [Required(ErrorMessage = "Debe aceptar los términos y condiciones")]
         public bool AcceptTerms { get; set; }
     }
 
@@ -35,135 +89,221 @@ public sealed class MatriculateModel : PageModel
     public Ciclo? CurrentCiclo { get; set; }
     public bool MatriculaAbierta { get; set; }
     public string? MatriculaMensaje { get; set; }
+    public bool MercadoPagoEnabled { get; set; }
+
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
 
     public async Task OnGetAsync()
     {
         CurrentCiclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
+        MercadoPagoEnabled = _configuration.GetValue<bool>("MercadoPago:Enabled");
         EvaluateMatriculaWindow();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        CurrentCiclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
-        EvaluateMatriculaWindow();
+        if (!ModelState.IsValid)
+        {
+            await LoadCurrentCycleAsync();
+            return Page();
+        }
 
+        // Validar términos
         if (!Input.AcceptTerms)
         {
-            ModelState.AddModelError(string.Empty, "Debe aceptar los términos.");
+            ModelState.AddModelError(string.Empty, "Debes aceptar los términos y condiciones.");
+            await LoadCurrentCycleAsync();
             return Page();
         }
 
-        if (CurrentCiclo is null)
+        await LoadCurrentCycleAsync();
+
+        if (CurrentCiclo == null)
         {
-            ModelState.AddModelError(string.Empty, "No hay ciclo activo para matricular.");
+            ErrorMessage = "No hay un ciclo disponible para matrícula.";
             return Page();
         }
 
-        // Require admin to set explicit matricula window
-        if (!CurrentCiclo.MatriculaInicio.HasValue || !CurrentCiclo.MatriculaFin.HasValue)
+        // Validar periodo de matrícula
+        if (!MatriculaAbierta)
         {
-            ModelState.AddModelError(string.Empty, "La administración no ha definido el periodo de matrícula para este ciclo.");
+            ErrorMessage = "El periodo de matrícula no está abierto.";
             return Page();
         }
 
-        var now = DateTime.UtcNow;
-        var start = CurrentCiclo.MatriculaInicio.Value;
-        var end = CurrentCiclo.MatriculaFin.Value;
-
-        if (now < start)
+        // Validar vacantes
+        if (CurrentCiclo.Vacantes > 0)
         {
-            ModelState.AddModelError(string.Empty, $"La matrícula aún no ha comenzado. Comienza: {start.ToString("g")}");
-            return Page();
-        }
+            var matriculasActuales = await _context.Matriculas
+                .Where(m => m.CicloId == CurrentCiclo.Id && m.EstadoPago == Academic.Models.EstadoPago.Pagado)
+                .CountAsync();
 
-        if (now > end)
-        {
-            ModelState.AddModelError(string.Empty, "La fecha de matrícula ha finalizado.");
-            return Page();
-        }
-
-        // Vacantes check: only apply for presencial modalidad
-        if (CurrentCiclo.Modalidad == ModalidadCiclo.Presencial && CurrentCiclo.Vacantes > 0)
-        {
-            var count = await _context.Matriculas.CountAsync(m => m.CicloId == CurrentCiclo.Id);
-            if (count >= CurrentCiclo.Vacantes)
+            if (matriculasActuales >= CurrentCiclo.Vacantes)
             {
-                ModelState.AddModelError(string.Empty, "No hay vacantes disponibles para modalidad presencial.");
+                ErrorMessage = "Lo sentimos, ya no hay vacantes disponibles para este ciclo.";
                 return Page();
             }
         }
 
-        // Prevent duplicate alumno by email
-        var existingAlumno = await _context.Alumnos.FirstOrDefaultAsync(a => a.Email == Input.Email);
-        if (existingAlumno != null)
+        try
         {
-            ModelState.AddModelError(string.Empty, "Ya existe un alumno registrado con ese correo.");
-            return Page();
-        }
-
-        var alumno = new Academic.Models.Alumno
-        {
-            Nombre = Input.Nombre,
-            Apellido = Input.Apellido,
-            Email = Input.Email
-        };
-
-        _context.Alumnos.Add(alumno);
-        await _context.SaveChangesAsync();
-
-        // Ensure Identity user for alumno exists and has role
-        var identityUser = await _userManager.FindByEmailAsync(Input.Email);
-        if (identityUser == null)
-        {
-            identityUser = new IdentityUser { Email = Input.Email, UserName = Input.Email, EmailConfirmed = true };
-            var pwd = "Alumno123!"; // TODO: replace with secure random & email notification
-            var create = await _userManager.CreateAsync(identityUser, pwd);
-            if (create.Succeeded)
+            // Validar email único
+            var existingUserByEmail = await _userManager.FindByEmailAsync(Input.Email);
+            if (existingUserByEmail != null)
             {
-                await _userManager.AddToRoleAsync(identityUser, "Alumno");
+                ErrorMessage = $"El email {Input.Email} ya está registrado. Si ya tienes cuenta, inicia sesión.";
+                return Page();
+            }
+
+            // Validar DNI único
+            var existingAlumnoDNI = await _context.Alumnos
+                .FirstOrDefaultAsync(a => a.DNI == Input.DNI.ToUpper());
+
+            if (existingAlumnoDNI != null)
+            {
+                ErrorMessage = $"El DNI {Input.DNI} ya está registrado en el sistema.";
+                return Page();
+            }
+
+            // Verificar si Mercado Pago está habilitado
+            var mercadoPagoEnabled = _configuration.GetValue<bool>("MercadoPago:Enabled");
+
+            if (mercadoPagoEnabled)
+            {
+                // FLUJO CON MERCADO PAGO: Guardar datos en TempData y redirigir a MP
+                TempData["PendingRegistration"] = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Input.Nombre,
+                    Input.Apellido,
+                    Input.DNI,
+                    Input.Email,
+                    Input.Password,
+                    Input.Telefono,
+                    Input.Direccion,
+                    CicloId = CurrentCiclo.Id,
+                    MontoMatricula = CurrentCiclo.MontoMatricula
+                });
+
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                _logger.LogInformation("Creando preferencia de MP. BaseUrl: {BaseUrl}", baseUrl);
+
+                var tempAlumno = new Academic.Models.Alumno
+                {
+                    Nombre = Input.Nombre,
+                    Apellido = Input.Apellido,
+                    Email = Input.Email,
+                    Telefono = Input.Telefono
+                };
+
+                var tempMatricula = new Academic.Models.Matricula
+                {
+                    Id = 0,
+                    Monto = CurrentCiclo.MontoMatricula,
+                    Moneda = "PEN"
+                };
+
+                var (initPoint, preferenceId) = await _mpService.CreatePreferenceAsync(tempMatricula, tempAlumno, CurrentCiclo, baseUrl);
+
+                if (string.IsNullOrWhiteSpace(initPoint))
+                {
+                    _logger.LogError("Mercado Pago no retornó initPoint.");
+                    ErrorMessage = "Error al procesar el pago con Mercado Pago. Por favor, intente nuevamente más tarde o contacte con la administración.";
+                    return Page();
+                }
+
+                TempData["MercadoPagoPreferenceId"] = preferenceId;
+                _logger.LogInformation("Redirigiendo a MP. InitPoint: {InitPoint}", initPoint);
+
+                return Redirect(initPoint);
             }
             else
             {
-                // log and continue; student domain exists but no identity account
-                // In production we'd notify admin
+                // FLUJO SIN MERCADO PAGO: Crear usuario y matrícula inmediatamente con estado "Pendiente"
+                _logger.LogInformation("Mercado Pago deshabilitado. Creando matrícula pendiente de aprobación manual.");
+
+                // Crear alumno
+                var alumno = new Academic.Models.Alumno
+                {
+                    Nombre = Input.Nombre,
+                    Apellido = Input.Apellido,
+                    DNI = Input.DNI.ToUpper(),
+                    Email = Input.Email,
+                    Telefono = Input.Telefono,
+                    Direccion = Input.Direccion,
+                    IsActive = true,
+                    SalonId = null
+                };
+
+                _context.Alumnos.Add(alumno);
+                await _context.SaveChangesAsync();
+
+                // Crear matrícula en estado Pendiente
+                var matricula = new Matricula
+                {
+                    AlumnoId = alumno.Id,
+                    CicloId = CurrentCiclo.Id,
+                    Monto = CurrentCiclo.MontoMatricula,
+                    Moneda = "PEN",
+                    EstadoPago = EstadoPago.Pendiente,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Matriculas.Add(matricula);
+                await _context.SaveChangesAsync();
+
+                // Crear usuario Identity
+                var identityUser = new IdentityUser
+                {
+                    Email = Input.Email,
+                    UserName = Input.Email,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(identityUser, Input.Password);
+
+                if (!createResult.Succeeded)
+                {
+                    // Rollback: eliminar alumno y matrícula
+                    _context.Matriculas.Remove(matricula);
+                    _context.Alumnos.Remove(alumno);
+                    await _context.SaveChangesAsync();
+
+                    ErrorMessage = "Error al crear la cuenta de usuario: " + string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    return Page();
+                }
+
+                // Asignar rol
+                await _userManager.AddToRoleAsync(identityUser, "Alumno");
+
+                // Login automático
+                await _signInManager.SignInAsync(identityUser, isPersistent: false);
+
+                SuccessMessage = $"¡Registro exitoso! Tu matrícula está pendiente de aprobación. Un tutor revisará tu pago y actualizará el estado.";
+                
+                return RedirectToPage("/Alumno/Dashboard");
             }
         }
-
-        var matricula = new Academic.Models.Matricula
+        catch (Exception ex)
         {
-            AlumnoId = alumno.Id,
-            CicloId = CurrentCiclo.Id,
-            Monto = 1.00m,
-            Moneda = "PEN",
-            EstadoPago = Academic.Models.EstadoPago.Pendiente,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Matriculas.Add(matricula);
-        await _context.SaveChangesAsync();
-
-        var host = $"{Request.Scheme}://{Request.Host}";
-        var returnUrl = $"{host}/Public/Matriculate?mpStatus=return";
-
-        var (initPoint, prefId) = await _mpService.CreatePreferenceAsync(matricula, returnUrl);
-        if (initPoint is null)
-        {
-            TempData["Error"] = "Error creando preferencia de pago.";
+            _logger.LogError(ex, "Error al procesar la matrícula");
+            ErrorMessage = $"Error al procesar la matrícula: {ex.Message}. Por favor, intente nuevamente o contacte con la administración.";
             return Page();
         }
-
-        matricula.MercadoPagoInitPoint = initPoint;
-        matricula.MercadoPagoPreferenceId = prefId;
-        await _context.SaveChangesAsync();
-
-        return Redirect(initPoint);
     }
 
     private void EvaluateMatriculaWindow()
     {
         MatriculaAbierta = false;
         MatriculaMensaje = null;
-        if (CurrentCiclo == null) return;
+        if (CurrentCiclo == null) 
+        {
+            MatriculaMensaje = "No hay ciclo activo en este momento.";
+            return;
+        }
 
         if (!CurrentCiclo.MatriculaInicio.HasValue || !CurrentCiclo.MatriculaFin.HasValue)
         {
@@ -174,7 +314,7 @@ public sealed class MatriculateModel : PageModel
         var now = DateTime.UtcNow;
         if (now < CurrentCiclo.MatriculaInicio.Value)
         {
-            MatriculaMensaje = $"La matrícula empezará el {CurrentCiclo.MatriculaInicio.Value.ToString("g")}.";
+            MatriculaMensaje = $"La matrícula empezará el {CurrentCiclo.MatriculaInicio.Value.ToString("dd/MM/yyyy HH:mm")}.";
             return;
         }
         if (now > CurrentCiclo.MatriculaFin.Value)
@@ -186,7 +326,9 @@ public sealed class MatriculateModel : PageModel
         // vacancy info
         if (CurrentCiclo.Modalidad == ModalidadCiclo.Presencial && CurrentCiclo.Vacantes > 0)
         {
-            MatriculaMensaje = $"Modalidad: Presencial. Vacantes disponibles: {CurrentCiclo.Vacantes}.";
+            var vacantesOcupadas = _context.Matriculas.Count(m => m.CicloId == CurrentCiclo.Id);
+            var vacantesDisponibles = CurrentCiclo.Vacantes - vacantesOcupadas;
+            MatriculaMensaje = $"Modalidad: Presencial. Vacantes disponibles: {vacantesDisponibles} de {CurrentCiclo.Vacantes}.";
         }
         else if (CurrentCiclo.Modalidad == ModalidadCiclo.Virtual)
         {
@@ -198,5 +340,12 @@ public sealed class MatriculateModel : PageModel
         }
 
         MatriculaAbierta = true;
+    }
+
+    private async Task LoadCurrentCycleAsync()
+    {
+        CurrentCiclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
+        MercadoPagoEnabled = _configuration.GetValue<bool>("MercadoPago:Enabled");
+        EvaluateMatriculaWindow();
     }
 }

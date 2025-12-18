@@ -1,0 +1,175 @@
+@page
+@model Academic.Pages.Public.MatriculaResultModel
+@{
+    ViewData["Title"] = "Resultado de Matrícula";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header text-white @(Model.MessageType == "success" ? "bg-success" : Model.MessageType == "warning" ? "bg-warning" : Model.MessageType == "danger" ? "bg-danger" : "bg-info")">
+                    <h4 class="mb-0">
+                        @if (Model.MessageType == "success")
+                        {
+                            <i class="bi bi-check-circle"></i>
+                        }
+                        else if (Model.MessageType == "warning")
+                        {
+                            <i class="bi bi-exclamation-triangle"></i>
+                        }
+                        else if (Model.MessageType == "danger")
+                        {
+                            <i class="bi bi-x-circle"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-info-circle"></i>
+                        }
+                        Resultado de Matrícula
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-@Model.MessageType" role="alert">
+                        <h5 class="alert-heading">
+                            @if (Model.MessageType == "success")
+                            {
+                                <text>¡Éxito!</text>
+                            }
+                            else if (Model.MessageType == "warning")
+                            {
+                                <text>Pendiente</text>
+                            }
+                            else if (Model.MessageType == "danger")
+                            {
+                                <text>Error de Pago</text>
+                            }
+                            else
+                            {
+                                <text>Información</text>
+                            }
+                        </h5>
+                        <p class="mb-0">@Model.Message</p>
+                    </div>
+
+                    @if (Model.Matricula != null)
+                    {
+                        <div class="mt-4">
+                            <h5>Detalles de la Matrícula</h5>
+                            <hr />
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Estudiante:</strong> @Model.Alumno?.Nombre @Model.Alumno?.Apellido</p>
+                                    <p><strong>Email:</strong> @Model.Alumno?.Email</p>
+                                    <p><strong>DNI:</strong> @Model.Alumno?.DNI</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Ciclo:</strong> @Model.Ciclo?.Nombre</p>
+                                    <p><strong>Monto:</strong> @Model.Matricula.Moneda @Model.Matricula.Monto.ToString("N2")</p>
+                                    <p><strong>Estado:</strong> 
+                                        <span class="badge @(Model.Matricula.EstadoPago == Academic.Models.EstadoPago.Pagado ? "bg-success" : Model.Matricula.EstadoPago == Academic.Models.EstadoPago.Pendiente ? "bg-warning" : "bg-danger")">
+                                            @Model.Matricula.EstadoPago
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            @if (Model.Matricula.FechaPago.HasValue)
+                            {
+                                <p><strong>Fecha de Pago:</strong> @Model.Matricula.FechaPago.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                            }
+                        </div>
+
+                        @if (Model.MessageType == "success")
+                        {
+                            <div class="alert alert-info mt-4">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Próximos pasos:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Recibirás un email de confirmación</li>
+                                    <li>Podrás acceder a tu dashboard con tus credenciales</li>
+                                    <li>El ciclo comienza el @Model.Ciclo?.FechaInicio.ToString("dd/MM/yyyy")</li>
+                                </ul>
+                            </div>
+                        }
+
+                        @if (Model.MessageType == "danger")
+                        {
+                            <div class="alert alert-warning mt-4">
+                                <i class="bi bi-lightbulb"></i>
+                                <strong>Sugerencias:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Verifica que tengas fondos suficientes</li>
+                                    <li>Comprueba los datos de tu tarjeta</li>
+                                    <li>Intenta con otro método de pago</li>
+                                    <li>Contacta con tu banco si el problema persiste</li>
+                                </ul>
+                            </div>
+                        }
+                    }
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        @if (Model.MessageType == "success")
+                        {
+                            @if (User.Identity?.IsAuthenticated ?? false)
+                            {
+                                <a href="/Alumno/Dashboard" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-house"></i> Ir a Mi Dashboard
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/Account/Login" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                                </a>
+                            }
+                        }
+                        else if (Model.MessageType == "danger" || Model.MessageType == "warning")
+                        {
+                            <a href="/Public/Matriculate" class="btn btn-warning btn-lg">
+                                <i class="bi bi-arrow-repeat"></i> Intentar Nuevamente
+                            </a>
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-house"></i> Ir al Inicio
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/" class="btn btn-primary">
+                                <i class="bi bi-house"></i> Ir al Inicio
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.MessageType == "danger")
+            {
+                <div class="card shadow-sm mt-3">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="bi bi-question-circle"></i> ¿Necesitas ayuda?</h6>
+                        <p class="mb-2">Si continúas teniendo problemas con el pago, contáctanos:</p>
+                        <ul class="mb-0 small">
+                            <li>Email: info@academiazoe.edu.pe</li>
+                            <li>Teléfono: (066) 123-4567</li>
+                            <li>WhatsApp: +51 966 617 676</li>
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-primary {
+        background-color: #800020;
+        border-color: #800020;
+    }
+    .btn-primary:hover {
+        background-color: #660019;
+        border-color: #660019;
+    }
+</style>

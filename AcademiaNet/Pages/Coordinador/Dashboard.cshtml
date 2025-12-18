@@ -2,7 +2,288 @@
 @model Academic.Pages.Coordinador.DashboardModel
 @{
     Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Dashboard Coordinador";
 }
 
-<h2>Panel Coordinador</h2>
-<p>Bienvenido coordinador.</p>
+<div class="container-fluid mt-4">
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @Model.StatusMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0"><i class="bi bi-building"></i> Panel de Coordinación</h3>
+                        <small class="text-muted">
+                            @if (Model.CicloActual != null)
+                            {
+                                <span>Ciclo Actual: @Model.CicloActual.Nombre</span>
+                            }
+                        </small>
+                    </div>
+                    <div>
+                        <a asp-page="/Admin/CreateCycle" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Nuevo Ciclo
+                        </a>
+                        <a asp-page="/Admin/CreateTutor" class="btn btn-success">
+                            <i class="bi bi-person-plus"></i> Nuevo Tutor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-primary">
+                <div class="card-body text-center">
+                    <i class="bi bi-people-fill fs-1 text-primary"></i>
+                    <h3 class="mt-2">@Model.TotalAlumnos</h3>
+                    <p class="text-muted mb-0">Alumnos Activos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-person-badge fs-1 text-success"></i>
+                    <h3 class="mt-2">@Model.TotalProfesores</h3>
+                    <p class="text-muted mb-0">Profesores</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-info">
+                <div class="card-body text-center">
+                    <i class="bi bi-person-check fs-1 text-info"></i>
+                    <h3 class="mt-2">@Model.TotalTutores</h3>
+                    <p class="text-muted mb-0">Tutores</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-door-open fs-1 text-warning"></i>
+                    <h3 class="mt-2">@Model.TotalSalones</h3>
+                    <p class="text-muted mb-0">Salones</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matrículas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-clock-history fs-1 text-warning"></i>
+                    <h3 class="mt-2">@Model.MatriculasPendientes</h3>
+                    <p class="text-muted mb-0">Matrículas Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle fs-1 text-success"></i>
+                    <h3 class="mt-2">@Model.MatriculasAprobadas</h3>
+                    <p class="text-muted mb-0">Matrículas Aprobadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matrículas Pendientes -->
+    @if (Model.MatriculasPendientesLista.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning">
+                <i class="bi bi-exclamation-triangle"></i> <strong>Matrículas Pendientes de Aprobación</strong>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>Email</th>
+                                <th>Ciclo</th>
+                                <th>Monto</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in Model.MatriculasPendientesLista)
+                            {
+                                <tr>
+                                    <td>@m.Alumno.Nombre @m.Alumno.Apellido</td>
+                                    <td><small>@m.Alumno.Email</small></td>
+                                    <td>@m.Ciclo.Nombre</td>
+                                    <td>@m.Moneda @m.Monto.ToString("N2")</td>
+                                    <td><small>@m.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small></td>
+                                    <td>
+                                        <form method="post" class="d-inline">
+                                            <button type="submit" 
+                                                    asp-page-handler="AprobarMatricula" 
+                                                    asp-route-matriculaId="@m.Id" 
+                                                    class="btn btn-sm btn-success"
+                                                    onclick="return confirm('¿Aprobar matrícula de @m.Alumno.Nombre?')">
+                                                <i class="bi bi-check-circle"></i> Aprobar
+                                            </button>
+                                            <button type="submit" 
+                                                    asp-page-handler="RechazarMatricula" 
+                                                    asp-route-matriculaId="@m.Id" 
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('¿Rechazar matrícula de @m.Alumno.Nombre?')">
+                                                <i class="bi bi-x-circle"></i> Rechazar
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Salones y Asignaciones -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <i class="bi bi-door-closed"></i> <strong>Gestión de Salones y Tutores</strong>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var salon in Model.Salones)
+                {
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>@salon.Nombre</strong> - @salon.Sede?.Nombre
+                                <br><small class="text-muted">Profesor: @salon.Profesor?.Nombre @salon.Profesor?.Apellido</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2"><strong>Alumnos:</strong> @(salon.Alumnos?.Count ?? 0)</p>
+                                
+                                <p class="mb-2"><strong>Tutores Asignados:</strong></p>
+                                @if (salon.TutorSalones != null && salon.TutorSalones.Any())
+                                {
+                                    <ul class="list-unstyled">
+                                        @foreach (var ts in salon.TutorSalones)
+                                        {
+                                            <li class="mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span>
+                                                        <i class="bi bi-person"></i> @ts.Tutor?.Nombre @ts.Tutor?.Apellido
+                                                    </span>
+                                                    <form method="post" class="d-inline">
+                                                        <button type="submit"
+                                                                asp-page-handler="RemoverTutorSalon"
+                                                                asp-route-tutorId="@ts.TutorId"
+                                                                asp-route-salonId="@ts.SalonId"
+                                                                class="btn btn-sm btn-outline-danger"
+                                                                onclick="return confirm('¿Remover tutor?')">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">Sin tutores asignados</p>
+                                }
+
+                                <!-- Asignar nuevo tutor -->
+                                <div class="mt-3">
+                                    <form method="post" asp-page-handler="AsignarTutorSalon" asp-route-salonId="@salon.Id">
+                                        <div class="input-group input-group-sm">
+                                            <select name="tutorId" class="form-select" required>
+                                                <option value="">Seleccionar tutor...</option>
+                                                @foreach (var tutor in Model.Tutores)
+                                                {
+                                                    <option value="@tutor.Id">@tutor.Nombre @tutor.Apellido</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-plus"></i> Asignar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimas Matrículas -->
+    @if (Model.UltimasMatriculas.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-list-check"></i> <strong>Últimas Matrículas</strong>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Alumno</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Monto</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in Model.UltimasMatriculas)
+                            {
+                                <tr>
+                                    <td>@m.Alumno.Nombre @m.Alumno.Apellido</td>
+                                    <td><small>@m.Alumno.Email</small></td>
+                                    <td>
+                                        @if (m.EstadoPago == Academic.Models.EstadoPago.Pagado)
+                                        {
+                                            <span class="badge bg-success">Pagado</span>
+                                        }
+                                        else if (m.EstadoPago == Academic.Models.EstadoPago.Pendiente)
+                                        {
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Cancelado</span>
+                                        }
+                                    </td>
+                                    <td>@m.Moneda @m.Monto.ToString("N2")</td>
+                                    <td><small>@m.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .card-header.bg-dark { background-color: #800020 !important; }
+</style>
