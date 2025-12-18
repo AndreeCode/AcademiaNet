@@ -8,7 +8,7 @@ using Academic.Services;
 
 namespace Academic.Pages.Materiales;
 
-[Authorize(Roles = "Admin,Tutor,Coordinador")]
+[Authorize(Roles = "Admin,Tutor,Coordinador,Profesor")]
 public class IndexModel : PageModel
 {
     private readonly AcademicContext _context;

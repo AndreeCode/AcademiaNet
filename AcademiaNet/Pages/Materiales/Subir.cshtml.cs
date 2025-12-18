@@ -10,7 +10,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Academic.Pages.Materiales;
 
-[Authorize(Roles = "Admin,Tutor,Coordinador")]
+[Authorize(Roles = "Admin,Tutor,Coordinador,Profesor")]
 public class SubirModel : PageModel
 {
     private readonly AcademicContext _context;

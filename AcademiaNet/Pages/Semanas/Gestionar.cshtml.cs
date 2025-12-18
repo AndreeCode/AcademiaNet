@@ -9,7 +9,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Academic.Pages.Semanas;
 
-[Authorize(Roles = "Admin,Coordinador")]
+[Authorize(Roles = "Admin,Coordinador,Profesor,Tutor")]
 public class GestionarModel : PageModel
 {
     private readonly AcademicContext _context;

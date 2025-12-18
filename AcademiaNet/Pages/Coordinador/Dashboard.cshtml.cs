@@ -7,6 +7,7 @@ using Academic.Data;
 using Academic.Models;
 using System.ComponentModel.DataAnnotations;
 using TutorModel = Academic.Models.Tutor;
+using ProfesorModel = Academic.Models.Profesor;
 
 namespace Academic.Pages.Coordinador;
 
@@ -40,7 +41,7 @@ public class DashboardModel : PageModel
     public List<Matricula> UltimasMatriculas { get; set; } = new();
     public List<Matricula> MatriculasPendientesLista { get; set; } = new();
     public List<Salon> Salones { get; set; } = new();
-    public List<Profesor> Profesores { get; set; } = new();
+    public List<ProfesorModel> Profesores { get; set; } = new();
     public List<TutorModel> Tutores { get; set; } = new();
 
     [TempData]

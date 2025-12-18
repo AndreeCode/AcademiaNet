@@ -2,23 +2,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Academic.Data;
-using Academic.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace Academic.Pages.Admin;
 
-[Authorize(Roles = "Admin,Coordinador")]
-public class CreateTutorModel : PageModel
+[Authorize(Roles = "Admin")]
+public class CreateAdminModel : PageModel
 {
-    private readonly AcademicContext _context;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly ILogger<CreateAdminModel> _logger;
 
-    public CreateTutorModel(AcademicContext context, UserManager<IdentityUser> userManager)
+    public CreateAdminModel(UserManager<IdentityUser> userManager, ILogger<CreateAdminModel> logger)
     {
-        _context = context;
         _userManager = userManager;
+        _logger = logger;
     }
 
     [BindProperty]
@@ -30,11 +27,11 @@ public class CreateTutorModel : PageModel
     public class InputModel
     {
         [Required(ErrorMessage = "El nombre es requerido")]
-        [StringLength(100, ErrorMessage = "El nombre no puede exceder 100 caracteres")]
+        [StringLength(100)]
         public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El apellido es requerido")]
-        [StringLength(100, ErrorMessage = "El apellido no puede exceder 100 caracteres")]
+        [StringLength(100)]
         public string Apellido { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El email es requerido")]
@@ -42,15 +39,13 @@ public class CreateTutorModel : PageModel
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La contraseña es requerida")]
-        [StringLength(100, ErrorMessage = "La {0} debe tener al menos {2} y máximo {1} caracteres.", MinimumLength = 6)]
+        [StringLength(100, MinimumLength = 6)]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
-        [Compare("Password", ErrorMessage = "La contraseña y la confirmación no coinciden.")]
+        [Compare("Password", ErrorMessage = "Las contraseñas no coinciden.")]
         public string ConfirmPassword { get; set; } = string.Empty;
-
-        public bool IsActive { get; set; } = true;
     }
 
     public void OnGet()
@@ -66,15 +61,6 @@ public class CreateTutorModel : PageModel
 
         try
         {
-            // Verificar si ya existe un tutor con ese email
-            var existingTutor = await _context.Tutores.FirstOrDefaultAsync(t => t.Email == Input.Email);
-            if (existingTutor != null)
-            {
-                ModelState.AddModelError("Input.Email", "Ya existe un tutor con ese email.");
-                return Page();
-            }
-
-            // Verificar si ya existe un usuario con ese email
             var existingUser = await _userManager.FindByEmailAsync(Input.Email);
             if (existingUser != null)
             {
@@ -82,7 +68,6 @@ public class CreateTutorModel : PageModel
                 return Page();
             }
 
-            // Crear usuario Identity
             var user = new IdentityUser
             {
                 UserName = Input.Email,
@@ -100,27 +85,17 @@ public class CreateTutorModel : PageModel
                 return Page();
             }
 
-            // Asignar rol de Tutor
-            await _userManager.AddToRoleAsync(user, "Tutor");
+            await _userManager.AddToRoleAsync(user, "Admin");
 
-            // Crear entidad Tutor
-            var tutor = new Academic.Models.Tutor
-            {
-                Nombre = Input.Nombre,
-                Apellido = Input.Apellido,
-                Email = Input.Email,
-                IsActive = Input.IsActive
-            };
-
-            _context.Tutores.Add(tutor);
-            await _context.SaveChangesAsync();
-
-            StatusMessage = $"Tutor '{tutor.Nombre} {tutor.Apellido}' creado exitosamente. Email: {tutor.Email}, Contraseña: {Input.Password}";
+            _logger.LogInformation("Administrador creado: {Email}", user.Email);
+            StatusMessage = $"Administrador '{Input.Nombre} {Input.Apellido}' creado exitosamente. Email: {user.Email}";
+            
             return RedirectToPage("/Admin/Dashboard");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error al crear el tutor: {ex.Message}";
+            _logger.LogError(ex, "Error al crear administrador");
+            StatusMessage = $"Error: {ex.Message}";
             return Page();
         }
     }

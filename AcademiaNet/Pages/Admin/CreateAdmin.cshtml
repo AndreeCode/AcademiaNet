@@ -1,0 +1,94 @@
+@page
+@model Academic.Pages.Admin.CreateAdminModel
+@{
+    ViewData["Title"] = "Crear Administrador";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-shield-fill-check"></i> Crear Nuevo Administrador</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            @Model.StatusMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>¡Atención!</strong> Estás creando un usuario con permisos de administrador completos.
+                    </div>
+
+                    <form method="post">
+                        <div asp-validation-summary="All" class="text-danger"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.Nombre" class="form-label">Nombre *</label>
+                                <input asp-for="Input.Nombre" class="form-control" placeholder="Nombre" />
+                                <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Input.Apellido" class="form-label">Apellido *</label>
+                                <input asp-for="Input.Apellido" class="form-control" placeholder="Apellido" />
+                                <span asp-validation-for="Input.Apellido" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="Input.Email" class="form-label">Email *</label>
+                                <input asp-for="Input.Email" class="form-control" placeholder="admin@academia.local" />
+                                <span asp-validation-for="Input.Email" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Input.Password" class="form-label">Contraseña *</label>
+                                <input asp-for="Input.Password" class="form-control" placeholder="Mínimo 6 caracteres" />
+                                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                                <small class="text-muted">Se recomienda una contraseña fuerte</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Input.ConfirmPassword" class="form-label">Confirmar Contraseña *</label>
+                                <input asp-for="Input.ConfirmPassword" class="form-control" />
+                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-save"></i> Crear Administrador
+                                </button>
+                                <a asp-page="/Admin/Dashboard" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Volver
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="bi bi-info-circle"></i> Permisos del Administrador</h6>
+                    <ul class="mb-0">
+                        <li>Acceso completo a todas las funciones del sistema</li>
+                        <li>Puede crear otros administradores, coordinadores y tutores</li>
+                        <li>Gestiona ciclos, salones, profesores y alumnos</li>
+                        <li><strong>Usa este rol con precaución</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
