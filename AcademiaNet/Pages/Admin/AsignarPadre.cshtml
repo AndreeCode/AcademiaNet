@@ -1,0 +1,179 @@
+@page
+@model Academic.Pages.Admin.AsignarPadreModel
+@{
+    ViewData["Title"] = "Asignar Padre/Apoderado";
+}
+
+<div class="container-fluid py-4">
+    <h2><i class="bi bi-person-plus"></i> Asignar Padre/Apoderado a Alumno</h2>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Nuevo Apoderado</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label asp-for="Input.AlumnoId" class="form-label">Alumno *</label>
+                            <select asp-for="Input.AlumnoId" class="form-select" required>
+                                <option value="">Seleccione un alumno</option>
+                                @foreach (var item in Model.Alumnos)
+                                {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Nombre" class="form-label">Nombre *</label>
+                                <input asp-for="Input.Nombre" class="form-control" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Apellido" class="form-label">Apellido *</label>
+                                <input asp-for="Input.Apellido" class="form-control" required />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.DNI" class="form-label">DNI *</label>
+                                <input asp-for="Input.DNI" class="form-control" required maxlength="20" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Telefono" class="form-label">Teléfono *</label>
+                                <input asp-for="Input.Telefono" class="form-control" required maxlength="20" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Email" class="form-label">Email *</label>
+                            <input asp-for="Input.Email" type="email" class="form-control" required />
+                            <small class="text-muted">
+                                Password por defecto: <strong>Apoderado123!</strong>
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Direccion" class="form-label">Dirección</label>
+                            <input asp-for="Input.Direccion" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Parentesco" class="form-label">Parentesco</label>
+                            <select asp-for="Input.Parentesco" class="form-select">
+                                <option value="">Seleccione</option>
+                                <option value="Padre">Padre</option>
+                                <option value="Madre">Madre</option>
+                                <option value="Tutor Legal">Tutor Legal</option>
+                                <option value="Abuelo/a">Abuelo/a</option>
+                                <option value="Tío/a">Tío/a</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="Input.RecibeNotificaciones" class="form-check-input" type="checkbox" />
+                            <label asp-for="Input.RecibeNotificaciones" class="form-check-label">
+                                Recibir notificaciones
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Asignar Apoderado
+                            </button>
+                            <a asp-page="/Admin/GestionarApoderados" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i> 
+                        Apoderados Registrados 
+                        <span class="badge bg-light text-dark">@Model.ApoderadosActuales.Count</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.ApoderadosActuales.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var apoderado in Model.ApoderadosActuales)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            <i class="bi bi-person"></i> 
+                                            @apoderado.Nombre @apoderado.Apellido
+                                        </h6>
+                                        <small class="text-muted">
+                                            @apoderado.FechaRegistro.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Alumno:</strong> @apoderado.Alumno?.Nombre @apoderado.Alumno?.Apellido
+                                        <br />
+                                        <strong>Email:</strong> @apoderado.Email
+                                        <br />
+                                        <strong>DNI:</strong> @apoderado.DNI
+                                        @if (!string.IsNullOrEmpty(apoderado.Parentesco))
+                                        {
+                                            <br />
+                                            <strong>Parentesco:</strong> @apoderado.Parentesco
+                                        }
+                                    </p>
+                                    <div class="mt-2">
+                                        <form method="post" asp-page-handler="Eliminar" class="d-inline">
+                                            <input type="hidden" name="apoderadoId" value="@apoderado.Id" />
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('¿Está seguro de eliminar este apoderado?');">
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">No hay apoderados registrados.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

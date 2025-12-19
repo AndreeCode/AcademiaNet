@@ -27,7 +27,13 @@
                         <i class="bi bi-grid-fill"></i> Resumen
                     </a>
                     <a class="list-group-item list-group-item-action" asp-page="/Materiales/Index">
-                        <i class="bi bi-file-earmark-text"></i> Materiales
+                        <i class="bi bi-folder"></i> Materiales
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-page="/Tutor/GestionarNotas">
+                        <i class="bi bi-clipboard-check"></i> Gestionar Notas
+                    </a>
+                    <a class="list-group-item list-group-item-action" asp-page="/Tutor/GestionarSalones">
+                        <i class="bi bi-door-open-fill"></i> Mis Salones
                     </a>
                 </div>
             </div>
@@ -279,6 +285,39 @@
                         </div>
                     </div>
                 }
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="row g-3">
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-list-check"></i> Acciones Rápidas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                <a class="list-group-item list-group-item-action" asp-page="/Tutor/GestionarSalones">
+                                    <i class="bi bi-building"></i> Gestionar Salones
+                                </a>
+                                <a class="list-group-item list-group-item-action" asp-page="/Tutor/AsignarSalones">
+                                    <i class="bi bi-person-plus"></i> Asignar Salones a Alumnos
+                                </a>
+                                <a class="list-group-item list-group-item-action" asp-page="/Tutor/AprobarMatriculas">
+                                    <i class="bi bi-check-circle"></i> Aprobar Matrículas
+                                </a>
+                                <a class="list-group-item list-group-item-action" asp-page="/Tutor/GestionarNotas">
+                                    <i class="bi bi-clipboard-check"></i> Gestionar Notas
+                                </a>
+                                <a class="list-group-item list-group-item-action" asp-page="/Materiales/Index">
+                                    <i class="bi bi-folder"></i> Ver Materiales
+                                </a>
+                                <a class="list-group-item list-group-item-action" asp-page="/Materiales/Subir">
+                                    <i class="bi bi-upload"></i> Subir Material
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -106,10 +106,16 @@
                                         }
                                         else if (!string.IsNullOrEmpty(material.FileUrl))
                                         {
-                                            <a href="/files/@material.FileUrl" target="_blank" class="btn btn-sm btn-outline-primary" title="Descargar">
+                                            <a href="/uploads/@material.FileUrl" target="_blank" class="btn btn-sm btn-outline-success" title="Ver/Descargar">
                                                 <i class="bi bi-download"></i>
                                             </a>
                                         }
+                                        <a asp-page="/Materiales/Detalle" asp-route-id="@material.Id" class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-page="/Materiales/Editar" asp-route-id="@material.Id" class="btn btn-sm btn-outline-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
                                         <form method="post" asp-page-handler="Delete" asp-route-id="@material.Id" class="d-inline" onsubmit="return confirm('¿Está seguro de eliminar este material?');">
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                                 <i class="bi bi-trash"></i>

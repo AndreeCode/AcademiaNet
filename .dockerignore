@@ -1,0 +1,33 @@
+# Archivos de compilación
+bin/
+obj/
+.vs/
+
+# Archivos de usuario
+*.user
+*.suo
+
+# Archivos de publicación
+publish/
+out/
+
+# Archivos temporales
+*.tmp
+*.log
+
+# Archivos de base de datos locales
+*.mdf
+*.ldf
+
+# Archivos de Docker
+.dockerignore
+
+# Node modules
+node_modules/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Documentación temporal
+*.md.backup

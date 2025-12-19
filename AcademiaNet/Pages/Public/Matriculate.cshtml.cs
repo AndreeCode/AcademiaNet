@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Academic.Data;
 using Academic.Services;
 using Academic.Models;
+using AlumnoModel = Academic.Models.Alumno;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +16,7 @@ public sealed class MatriculateModel : PageModel
 {
     private readonly AcademicContext _context;
     private readonly MercadoPagoService _mpService;
+    private readonly CulqiService _culqiService;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly ILogger<MatriculateModel> _logger;
@@ -22,7 +24,8 @@ public sealed class MatriculateModel : PageModel
 
     public MatriculateModel(
         AcademicContext context, 
-        MercadoPagoService mpService, 
+        MercadoPagoService mpService,
+        CulqiService culqiService,
         UserManager<IdentityUser> userManager,
         SignInManager<IdentityUser> signInManager,
         ILogger<MatriculateModel> logger,
@@ -30,6 +33,7 @@ public sealed class MatriculateModel : PageModel
     {
         _context = context;
         _mpService = mpService;
+        _culqiService = culqiService;
         _userManager = userManager;
         _signInManager = signInManager;
         _logger = logger;
@@ -89,7 +93,9 @@ public sealed class MatriculateModel : PageModel
     public Ciclo? CurrentCiclo { get; set; }
     public bool MatriculaAbierta { get; set; }
     public string? MatriculaMensaje { get; set; }
-    public bool MercadoPagoEnabled { get; set; }
+    public TipoPasarela PasarelaActiva { get; set; }
+    public string CulqiPublicKey { get; set; } = string.Empty;
+    public int VacantesOcupadas { get; set; }
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -100,7 +106,25 @@ public sealed class MatriculateModel : PageModel
     public async Task OnGetAsync()
     {
         CurrentCiclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
-        MercadoPagoEnabled = _configuration.GetValue<bool>("MercadoPago:Enabled");
+        
+        // Calcular vacantes ocupadas
+        if (CurrentCiclo != null)
+        {
+            VacantesOcupadas = await _context.Matriculas
+                .Where(m => m.CicloId == CurrentCiclo.Id && m.EstadoPago == EstadoPago.Pagado)
+                .CountAsync();
+        }
+        
+        // Obtener configuración de pasarela activa
+        var config = await _context.ConfiguracionPasarelas.FirstOrDefaultAsync();
+        PasarelaActiva = config?.PasarelaActiva ?? TipoPasarela.Culqi; // Por defecto Culqi
+        
+        // Obtener Public Key de Culqi si está activa
+        if (PasarelaActiva == TipoPasarela.Culqi)
+        {
+            CulqiPublicKey = _configuration.GetValue<string>("Culqi:PublicKey") ?? string.Empty;
+        }
+        
         EvaluateMatriculaWindow();
     }
 
@@ -112,7 +136,6 @@ public sealed class MatriculateModel : PageModel
             return Page();
         }
 
-        // Validar términos
         if (!Input.AcceptTerms)
         {
             ModelState.AddModelError(string.Empty, "Debes aceptar los términos y condiciones.");
@@ -128,7 +151,6 @@ public sealed class MatriculateModel : PageModel
             return Page();
         }
 
-        // Validar periodo de matrícula
         if (!MatriculaAbierta)
         {
             ErrorMessage = "El periodo de matrícula no está abierto.";
@@ -139,7 +161,7 @@ public sealed class MatriculateModel : PageModel
         if (CurrentCiclo.Vacantes > 0)
         {
             var matriculasActuales = await _context.Matriculas
-                .Where(m => m.CicloId == CurrentCiclo.Id && m.EstadoPago == Academic.Models.EstadoPago.Pagado)
+                .Where(m => m.CicloId == CurrentCiclo.Id && m.EstadoPago == EstadoPago.Pagado)
                 .CountAsync();
 
             if (matriculasActuales >= CurrentCiclo.Vacantes)
@@ -169,130 +191,170 @@ public sealed class MatriculateModel : PageModel
                 return Page();
             }
 
-            // Verificar si Mercado Pago está habilitado
-            var mercadoPagoEnabled = _configuration.GetValue<bool>("MercadoPago:Enabled");
+            // Obtener configuración de pasarela activa
+            var config = await _context.ConfiguracionPasarelas.FirstOrDefaultAsync();
+            var pasarelaActiva = config?.PasarelaActiva ?? TipoPasarela.Culqi;
 
-            if (mercadoPagoEnabled)
+            switch (pasarelaActiva)
             {
-                // FLUJO CON MERCADO PAGO: Guardar datos en TempData y redirigir a MP
-                TempData["PendingRegistration"] = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    Input.Nombre,
-                    Input.Apellido,
-                    Input.DNI,
-                    Input.Email,
-                    Input.Password,
-                    Input.Telefono,
-                    Input.Direccion,
-                    CicloId = CurrentCiclo.Id,
-                    MontoMatricula = CurrentCiclo.MontoMatricula
-                });
+                case TipoPasarela.Culqi:
+                    return await ProcessCulqiMatriculaAsync();
 
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                _logger.LogInformation("Creando preferencia de MP. BaseUrl: {BaseUrl}", baseUrl);
+                case TipoPasarela.MercadoPago:
+                    return await ProcessMercadoPagoMatriculaAsync();
 
-                var tempAlumno = new Academic.Models.Alumno
-                {
-                    Nombre = Input.Nombre,
-                    Apellido = Input.Apellido,
-                    Email = Input.Email,
-                    Telefono = Input.Telefono
-                };
-
-                var tempMatricula = new Academic.Models.Matricula
-                {
-                    Id = 0,
-                    Monto = CurrentCiclo.MontoMatricula,
-                    Moneda = "PEN"
-                };
-
-                var (initPoint, preferenceId) = await _mpService.CreatePreferenceAsync(tempMatricula, tempAlumno, CurrentCiclo, baseUrl);
-
-                if (string.IsNullOrWhiteSpace(initPoint))
-                {
-                    _logger.LogError("Mercado Pago no retornó initPoint.");
-                    ErrorMessage = "Error al procesar el pago con Mercado Pago. Por favor, intente nuevamente más tarde o contacte con la administración.";
-                    return Page();
-                }
-
-                TempData["MercadoPagoPreferenceId"] = preferenceId;
-                _logger.LogInformation("Redirigiendo a MP. InitPoint: {InitPoint}", initPoint);
-
-                return Redirect(initPoint);
-            }
-            else
-            {
-                // FLUJO SIN MERCADO PAGO: Crear usuario y matrícula inmediatamente con estado "Pendiente"
-                _logger.LogInformation("Mercado Pago deshabilitado. Creando matrícula pendiente de aprobación manual.");
-
-                // Crear alumno
-                var alumno = new Academic.Models.Alumno
-                {
-                    Nombre = Input.Nombre,
-                    Apellido = Input.Apellido,
-                    DNI = Input.DNI.ToUpper(),
-                    Email = Input.Email,
-                    Telefono = Input.Telefono,
-                    Direccion = Input.Direccion,
-                    IsActive = true,
-                    SalonId = null
-                };
-
-                _context.Alumnos.Add(alumno);
-                await _context.SaveChangesAsync();
-
-                // Crear matrícula en estado Pendiente
-                var matricula = new Matricula
-                {
-                    AlumnoId = alumno.Id,
-                    CicloId = CurrentCiclo.Id,
-                    Monto = CurrentCiclo.MontoMatricula,
-                    Moneda = "PEN",
-                    EstadoPago = EstadoPago.Pendiente,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Matriculas.Add(matricula);
-                await _context.SaveChangesAsync();
-
-                // Crear usuario Identity
-                var identityUser = new IdentityUser
-                {
-                    Email = Input.Email,
-                    UserName = Input.Email,
-                    EmailConfirmed = true
-                };
-
-                var createResult = await _userManager.CreateAsync(identityUser, Input.Password);
-
-                if (!createResult.Succeeded)
-                {
-                    // Rollback: eliminar alumno y matrícula
-                    _context.Matriculas.Remove(matricula);
-                    _context.Alumnos.Remove(alumno);
-                    await _context.SaveChangesAsync();
-
-                    ErrorMessage = "Error al crear la cuenta de usuario: " + string.Join(", ", createResult.Errors.Select(e => e.Description));
-                    return Page();
-                }
-
-                // Asignar rol
-                await _userManager.AddToRoleAsync(identityUser, "Alumno");
-
-                // Login automático
-                await _signInManager.SignInAsync(identityUser, isPersistent: false);
-
-                SuccessMessage = $"¡Registro exitoso! Tu matrícula está pendiente de aprobación. Un tutor revisará tu pago y actualizará el estado.";
-                
-                return RedirectToPage("/Alumno/Dashboard");
+                case TipoPasarela.SinPasarela:
+                default:
+                    return await ProcessManualMatriculaAsync();
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al procesar la matrícula");
-            ErrorMessage = $"Error al procesar la matrícula: {ex.Message}. Por favor, intente nuevamente o contacte con la administración.";
+            ErrorMessage = $"Error al procesar la matrícula: {ex.Message}";
             return Page();
         }
+    }
+
+    private async Task<IActionResult> ProcessCulqiMatriculaAsync()
+    {
+        _logger.LogInformation("Procesando matrícula con Culqi para {Email}", Input.Email);
+
+        // Guardar datos temporales para después del pago
+        TempData["PendingCulqiRegistration"] = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Input.Nombre,
+            Input.Apellido,
+            Input.DNI,
+            Input.Email,
+            Input.Password,
+            Input.Telefono,
+            Input.Direccion,
+            CicloId = CurrentCiclo!.Id,
+            MontoMatricula = CurrentCiclo.MontoMatricula
+        });
+
+        _logger.LogInformation("? Datos guardados en TempData. Frontend mostrará Culqi Checkout.");
+
+        // NO redirigir - dejar que el frontend muestre Culqi Checkout
+        // Recargar la página para que se mantenga el formulario
+        await LoadCurrentCycleAsync();
+        return Page();
+    }
+
+    private async Task<IActionResult> ProcessMercadoPagoMatriculaAsync()
+    {
+        _logger.LogInformation("Procesando matrícula con MercadoPago para {Email}", Input.Email);
+
+        TempData["PendingRegistration"] = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Input.Nombre,
+            Input.Apellido,
+            Input.DNI,
+            Input.Email,
+            Input.Password,
+            Input.Telefono,
+            Input.Direccion,
+            CicloId = CurrentCiclo!.Id,
+            MontoMatricula = CurrentCiclo.MontoMatricula
+        });
+
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var tempAlumno = new AlumnoModel
+        {
+            Nombre = Input.Nombre,
+            Apellido = Input.Apellido,
+            Email = Input.Email,
+            Telefono = Input.Telefono
+        };
+
+        var tempMatricula = new Matricula
+        {
+            Id = 0,
+            Monto = CurrentCiclo.MontoMatricula,
+            Moneda = "PEN"
+        };
+
+        var result = await _mpService.CreatePreferenceAsync(
+            tempMatricula, tempAlumno, CurrentCiclo, baseUrl);
+        
+        var initPoint = result.initPoint;
+        var preferenceId = result.preferenceId;
+
+        if (string.IsNullOrWhiteSpace(initPoint))
+        {
+            ErrorMessage = "Error al procesar el pago con MercadoPago.";
+            return Page();
+        }
+
+        TempData["MercadoPagoPreferenceId"] = preferenceId;
+        return Redirect(initPoint);
+    }
+
+    private async Task<IActionResult> ProcessManualMatriculaAsync()
+    {
+        _logger.LogInformation("Procesando matrícula manual (sin pasarela) para {Email}", Input.Email);
+
+        // Crear alumno
+        var alumno = new AlumnoModel
+        {
+            Nombre = Input.Nombre,
+            Apellido = Input.Apellido,
+            DNI = Input.DNI.ToUpper(),
+            Email = Input.Email,
+            Telefono = Input.Telefono,
+            Direccion = Input.Direccion,
+            IsActive = true,
+            SalonId = null
+        };
+
+        _context.Alumnos.Add(alumno);
+        await _context.SaveChangesAsync();
+
+        // Crear matrícula en estado Pendiente
+        var matricula = new Matricula
+        {
+            AlumnoId = alumno.Id,
+            CicloId = CurrentCiclo!.Id,
+            Monto = CurrentCiclo.MontoMatricula,
+            Moneda = "PEN",
+            EstadoPago = EstadoPago.Pendiente,
+            TipoPasarela = TipoPasarela.SinPasarela,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Matriculas.Add(matricula);
+        await _context.SaveChangesAsync();
+
+        // NO decrementar vacantes aquí - se hará al aprobar
+        // Vacantes se decrementan solo cuando Admin/Coordinador/Tutor aprueba la matrícula
+
+        // Crear usuario Identity
+        var identityUser = new IdentityUser
+        {
+            Email = Input.Email,
+            UserName = Input.Email,
+            EmailConfirmed = true
+        };
+
+        var createResult = await _userManager.CreateAsync(identityUser, Input.Password);
+
+        if (!createResult.Succeeded)
+        {
+            _context.Matriculas.Remove(matricula);
+            _context.Alumnos.Remove(alumno);
+            await _context.SaveChangesAsync();
+
+            ErrorMessage = "Error al crear la cuenta: " + string.Join(", ", 
+                createResult.Errors.Select(e => e.Description));
+            return Page();
+        }
+
+        await _userManager.AddToRoleAsync(identityUser, "Alumno");
+        await _signInManager.SignInAsync(identityUser, isPersistent: false);
+
+        SuccessMessage = "¡Registro exitoso! Tu matrícula está PENDIENTE DE APROBACIÓN. Un administrador verificará tu pago y te asignará un salón.";
+        return RedirectToPage("/Alumno/Dashboard");
     }
 
     private void EvaluateMatriculaWindow()
@@ -345,7 +407,25 @@ public sealed class MatriculateModel : PageModel
     private async Task LoadCurrentCycleAsync()
     {
         CurrentCiclo = await _context.Ciclos.OrderByDescending(c => c.Id).FirstOrDefaultAsync();
-        MercadoPagoEnabled = _configuration.GetValue<bool>("MercadoPago:Enabled");
+        
+        // Calcular vacantes ocupadas
+        if (CurrentCiclo != null)
+        {
+            VacantesOcupadas = await _context.Matriculas
+                .Where(m => m.CicloId == CurrentCiclo.Id && m.EstadoPago == EstadoPago.Pagado)
+                .CountAsync();
+        }
+        
+        // Obtener configuración de pasarela activa
+        var config = await _context.ConfiguracionPasarelas.FirstOrDefaultAsync();
+        PasarelaActiva = config?.PasarelaActiva ?? TipoPasarela.Culqi;
+        
+        // Obtener Public Key de Culqi si está activa
+        if (PasarelaActiva == TipoPasarela.Culqi)
+        {
+            CulqiPublicKey = _configuration.GetValue<string>("Culqi:PublicKey") ?? string.Empty;
+        }
+        
         EvaluateMatriculaWindow();
     }
 }

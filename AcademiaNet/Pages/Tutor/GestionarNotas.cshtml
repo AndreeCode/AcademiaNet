@@ -1,0 +1,150 @@
+@page
+@model Academic.Pages.Tutor.GestionarNotasModel
+@{
+    ViewData["Title"] = "Gestionar Notas";
+}
+
+<div class="container-fluid py-4">
+    <h2><i class="bi bi-clipboard-check"></i> Gestionar Notas</h2>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Registrar Nota</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="Create">
+                        <div class="mb-3">
+                            <label asp-for="Input.SalonId" class="form-label">Salón *</label>
+                            <select asp-for="Input.SalonId" asp-items="Model.SalonesSelectList" class="form-select">
+                                <option value="">Seleccione</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.AlumnoId" class="form-label">Alumno *</label>
+                            <select asp-for="Input.AlumnoId" asp-items="Model.AlumnosSelectList" class="form-select">
+                                <option value="">Seleccione</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.CicloId" class="form-label">Ciclo *</label>
+                            <select asp-for="Input.CicloId" asp-items="Model.CiclosSelectList" class="form-select">
+                                <option value="">Seleccione</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Materia" class="form-label">Materia *</label>
+                            <input asp-for="Input.Materia" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Calificacion" class="form-label">Calificación (0-20) *</label>
+                            <input asp-for="Input.Calificacion" type="number" step="0.01" min="0" max="20" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.TipoEvaluacion" class="form-label">Tipo</label>
+                            <select asp-for="Input.TipoEvaluacion" class="form-select">
+                                <option value="0">Examen</option>
+                                <option value="1">Tarea</option>
+                                <option value="2">Participación</option>
+                                <option value="3">Proyecto</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.FechaEvaluacion" class="form-label">Fecha *</label>
+                            <input asp-for="Input.FechaEvaluacion" type="date" class="form-control" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save"></i> Registrar Nota
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Notas Registradas</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Notas.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Alumno</th>
+                                        <th>Materia</th>
+                                        <th>Nota</th>
+                                        <th>Tipo</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var nota in Model.Notas)
+                                    {
+                                        <tr>
+                                            <td>@nota.Alumno?.Apellido, @nota.Alumno?.Nombre</td>
+                                            <td>@nota.Materia</td>
+                                            <td>
+                                                <span class="badge @(nota.Calificacion >= 10.5m ? "bg-success" : "bg-danger")">
+                                                    @nota.Calificacion.ToString("N2")
+                                                </span>
+                                            </td>
+                                            <td>@nota.TipoEvaluacion</td>
+                                            <td>@nota.FechaEvaluacion.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <form method="post" asp-page-handler="Delete" asp-route-id="@nota.Id" 
+                                                      onsubmit="return confirm('¿Eliminar esta nota?');"
+                                                      class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No hay notas registradas.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

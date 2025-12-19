@@ -1,0 +1,193 @@
+@page
+@model Academic.Pages.Tutor.AsignarSalonesModel
+@{
+    ViewData["Title"] = "Asignar Salones";
+}
+
+<div class="container-fluid py-4">
+    <h2><i class="bi bi-building"></i> Asignar Salones a Alumnos</h2>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.TutorActual == null)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle"></i>
+            No se encontró información del tutor.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge"></i> Mis Salones Asignados
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TutorActual.TutorSalones.Any())
+                {
+                    <div class="row">
+                        @foreach (var ts in Model.TutorActual.TutorSalones)
+                        {
+                            if (ts.Salon != null)
+                            {
+                                <div class="col-md-3">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="bi bi-door-closed"></i> @ts.Salon.Nombre
+                                            </h6>
+                                            <p class="card-text small mb-0">
+                                                <i class="bi bi-building"></i> @ts.Salon.Sede?.Nombre
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No tienes salones asignados.</p>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-people"></i> 
+                    Alumnos sin Salón Asignado 
+                    <span class="badge bg-danger">@Model.AlumnosSinSalon.Count</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.AlumnosSinSalon.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nombre Completo</th>
+                                    <th>Email</th>
+                                    <th>DNI</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var alumno in Model.AlumnosSinSalon)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@alumno.Nombre @alumno.Apellido</strong>
+                                        </td>
+                                        <td>@alumno.Email</td>
+                                        <td>@(alumno.DNI ?? "N/A")</td>
+                                        <td>
+                                            @if (alumno.IsActive)
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#asignarModal@(alumno.Id)">
+                                                <i class="bi bi-plus-circle"></i> Asignar Salón
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Modal Asignar -->
+                                    <div class="modal fade" id="asignarModal@(alumno.Id)" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">Asignar Salón</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" asp-page-handler="Asignar">
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="alumnoId" value="@alumno.Id" />
+                                                        
+                                                        <div class="alert alert-info">
+                                                            <strong>Alumno:</strong> @alumno.Nombre @alumno.Apellido<br />
+                                                            <strong>Email:</strong> @alumno.Email
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Seleccionar Salón *</label>
+                                                            <select name="salonId" class="form-select" required>
+                                                                <option value="">Seleccione un salón</option>
+                                                                @foreach (var item in Model.SalonesDisponibles)
+                                                                {
+                                                                    <option value="@item.Value">@item.Text</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="bi bi-check-lg"></i> Asignar
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle" style="font-size: 3rem; color: #28a745;"></i>
+                        <p class="text-muted mt-3">No hay alumnos sin salón asignado.</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="card shadow-sm mt-3">
+            <div class="card-body">
+                <h6><i class="bi bi-info-circle"></i> Instrucciones</h6>
+                <ul class="mb-0 small">
+                    <li>Solo puedes asignar alumnos a los salones que tienes asignados.</li>
+                    <li>Los alumnos deben estar activos para ser asignados.</li>
+                    <li>Puedes remover la asignación si es necesario.</li>
+                    <li>La asignación de salón es permanente hasta que se cambie.</li>
+                </ul>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

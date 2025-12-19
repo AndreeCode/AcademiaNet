@@ -20,6 +20,9 @@ public sealed class AcademicContext : IdentityDbContext
     public DbSet<Horario> Horarios => Set<Horario>();
     public DbSet<TutorSalon> TutorSalones => Set<TutorSalon>();
     public DbSet<Material> Materiales => Set<Material>();
+    public DbSet<ConfiguracionPasarela> ConfiguracionPasarelas => Set<ConfiguracionPasarela>();
+    public DbSet<Nota> Notas => Set<Nota>();
+    public DbSet<Apoderado> Apoderados => Set<Apoderado>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

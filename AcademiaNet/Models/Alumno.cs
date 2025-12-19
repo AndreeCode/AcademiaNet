@@ -20,6 +20,9 @@ public sealed class Alumno
     public string? NombreApoderado { get; set; }
     public string? TelefonoApoderado { get; set; }
 
+    // Promedio general del alumno (calculado)
+    public decimal? PromedioGeneral { get; set; }
+
     // Computed age (not mapped to DB explicitly)
     public int? Age {
         get {
@@ -32,4 +35,5 @@ public sealed class Alumno
     }
 
     public List<Matricula> Matriculas { get; set; } = new();
+    public List<Nota> Notas { get; set; } = new();
 }

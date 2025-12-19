@@ -1,0 +1,136 @@
+@page "{id:int?}"
+@model Academic.Pages.Materiales.EditarModel
+@{
+    ViewData["Title"] = "Editar Material";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-pencil-square"></i> Editar Material</h2>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Materiales/Detalle" asp-route-id="@Model.Input.Id" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @Model.StatusMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                <input type="hidden" asp-for="Input.Id" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Input.Title" class="form-label">Título *</label>
+                        <input asp-for="Input.Title" class="form-control" />
+                        <span asp-validation-for="Input.Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Input.TipoMaterial" class="form-label">Tipo de Material *</label>
+                        <select asp-for="Input.TipoMaterial" class="form-select">
+                            <option value="0">PDF</option>
+                            <option value="1">Enlace</option>
+                            <option value="2">Documento</option>
+                            <option value="3">Video</option>
+                            <option value="4">Imagen</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.Description" class="form-label">Descripción</label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Input.Description" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Input.CicloId" class="form-label">Ciclo *</label>
+                        <select asp-for="Input.CicloId" asp-items="Model.Ciclos" class="form-select" id="cicloSelect">
+                            <option value="">Seleccione un ciclo</option>
+                        </select>
+                        <span asp-validation-for="Input.CicloId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Input.SemanaId" class="form-label">Semana</label>
+                        <select asp-for="Input.SemanaId" asp-items="Model.Semanas" class="form-select" id="semanaSelect">
+                            <option value="">Seleccione una semana</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.SalonId" class="form-label">Salón</label>
+                    <select asp-for="Input.SalonId" asp-items="Model.Salones" class="form-select">
+                        <option value="">Seleccione un salón (opcional)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="urlContainer" style="display: none;">
+                    <label asp-for="Input.FileUrl" class="form-label">URL del Enlace</label>
+                    <input asp-for="Input.FileUrl" type="url" class="form-control" placeholder="https://..." />
+                    <small class="form-text text-muted">Solo para tipo "Enlace"</small>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Nota:</strong> No se puede cambiar el archivo subido. Si necesita cambiar el archivo, elimine este material y suba uno nuevo.
+                </div>
+
+                <div class="text-end">
+                    <a asp-page="/Materiales/Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tipoSelect = document.getElementById('Input_TipoMaterial');
+            const urlContainer = document.getElementById('urlContainer');
+            const cicloSelect = document.getElementById('cicloSelect');
+
+            function toggleUrlField() {
+                if (tipoSelect && urlContainer) {
+                    urlContainer.style.display = tipoSelect.value === '1' ? 'block' : 'none';
+                }
+            }
+
+            if (tipoSelect) {
+                tipoSelect.addEventListener('change', toggleUrlField);
+                toggleUrlField();
+            }
+
+            if (cicloSelect) {
+                cicloSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        window.location.href = `?id=@Model.Input.Id&handler=LoadSemanas&cicloId=${this.value}`;
+                    }
+                });
+            }
+        });
+    </script>
+}
+
+<style>
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

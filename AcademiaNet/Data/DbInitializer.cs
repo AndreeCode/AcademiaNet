@@ -38,6 +38,9 @@ public static class DbInitializer
             await EnsureSemanaTableAsync(context, logger);
             await EnsureMaterialesTableAsync(context, logger);
             await EnsureMaterialesColumnsAsync(context, logger);
+            await EnsureConfiguracionPasarelaTableAsync(context, logger);
+            await EnsureNotasTableAsync(context, logger);
+            await EnsureApoderadosTableAsync(context, logger);
         }
         catch (Exception ex)
         {
@@ -320,6 +323,37 @@ public static class DbInitializer
             addCommands.Add("ALTER TABLE [Matriculas] ADD [PaidAmount] decimal(18,2) NULL;");
         }
 
+        // Nuevas columnas para Culqi
+        var hasTipoPasarela = await ColumnExistsAsync(context, "Matriculas", "TipoPasarela");
+        if (!hasTipoPasarela)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [TipoPasarela] int NOT NULL CONSTRAINT DF_Matriculas_TipoPasarela DEFAULT(0);");
+        }
+
+        var hasCulqiChargeId = await ColumnExistsAsync(context, "Matriculas", "CulqiChargeId");
+        if (!hasCulqiChargeId)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [CulqiChargeId] nvarchar(200) NULL;");
+        }
+
+        var hasCulqiTokenId = await ColumnExistsAsync(context, "Matriculas", "CulqiTokenId");
+        if (!hasCulqiTokenId)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [CulqiTokenId] nvarchar(200) NULL;");
+        }
+
+        var hasCulqiOrderId = await ColumnExistsAsync(context, "Matriculas", "CulqiOrderId");
+        if (!hasCulqiOrderId)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [CulqiOrderId] nvarchar(200) NULL;");
+        }
+
+        var hasObservaciones = await ColumnExistsAsync(context, "Matriculas", "Observaciones");
+        if (!hasObservaciones)
+        {
+            addCommands.Add("ALTER TABLE [Matriculas] ADD [Observaciones] nvarchar(MAX) NULL;");
+        }
+
         if (addCommands.Count == 0) return;
 
         foreach (var cmd in addCommands)
@@ -398,14 +432,15 @@ public static class DbInitializer
             throw new InvalidOperationException("Identity tables (e.g. AspNetRoles) do not exist and could not be created. Ensure migrations are present or create the schema manually.");
 
         // Roles and role claims
-        var roles = new[] { "Admin", "Profesor", "Tutor", "Alumno", "Coordinador" };
+        var roles = new[] { "Admin", "Profesor", "Tutor", "Alumno", "Coordinador", "Apoderado" };
         var roleClaims = new Dictionary<string, Claim[]>
         {
             ["Admin"] = new[] { new Claim("permission", "all") },
             ["Profesor"] = new[] { new Claim("permission", "manage_courses") },
             ["Tutor"] = new[] { new Claim("permission", "manage_tutors") },
             ["Coordinador"] = new[] { new Claim("permission", "manage_enrollment") },
-            ["Alumno"] = new[] { new Claim("permission", "student_access") }
+            ["Alumno"] = new[] { new Claim("permission", "student_access") },
+            ["Apoderado"] = new[] { new Claim("permission", "parent_access") }
         };
 
         foreach (var roleName in roles)
@@ -560,8 +595,8 @@ public static class DbInitializer
             // Salons: ensure each tutor has at least 2 salons
             var salon1 = new Salon { Nombre = "A1", Sede = sede, Profesor = prof1 };
             var salon2 = new Salon { Nombre = "A2", Sede = sede, Profesor = prof1 };
-            var salon3 = new Salon { Nombre = "B1", Sede = sede2, Profesor = prof2 };
-            var salon4 = new Salon { Nombre = "B2", Sede = sede2, Profesor = prof2 };
+            var salon3 = new Salon { Nombre = "B1", Sede = sede2,Profesor=prof2 };
+            var salon4 = new Salon { Nombre = "B2", Sede = sede2,Profesor=prof2 };
             context.Salones.AddRange(salon1, salon2, salon3, salon4);
 
             // Assign tutors to salons
@@ -616,69 +651,344 @@ public static class DbInitializer
                 new Horario { Salon = salon4, Dia = DayOfWeek.Thursday, HoraInicio = TimeSpan.FromHours(16), HoraFin = TimeSpan.FromHours(18) }
             );
 
-            // Materials: each salon gets materials per week, tied to tutor and salon and course
+            // Materials: create materials for ALL salons and ALL weeks
             var semanas = await context.Semanas.Where(s => s.CicloId == ciclo.Id).ToListAsync();
+            
+            // MATERIALES PARA TODAS LAS SEMANAS Y TODOS LOS SALONES
             foreach (var semana in semanas)
             {
+                int weekNum = semana.NumeroSemana;
+
+                // ========== SALON A1 (Tutor Ana Lopez) ==========
+                // Matemáticas
                 context.Materiales.Add(new Material 
                 { 
-                    Title = $"Semana {semana.NumeroSemana} - Matemáticas ({salon1.Nombre})", 
-                    Description = "Apuntes y ejercicios.", 
-                    Week = semana.NumeroSemana,
+                    Title = $"Matemáticas Semana {weekNum} - Álgebra y Aritmética", 
+                    Description = $"Material completo de matemáticas para semana {weekNum}. Teoría, ejemplos resueltos y ejercicios propuestos con respuestas.", 
+                    Week = weekNum,
                     SemanaId = semana.Id,
                     Curso = prof1.Cursos.FirstOrDefault() ?? null, 
                     Ciclo = ciclo, 
-                    FileUrl = null, 
+                    FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonA1/matematicas_sem{weekNum}.pdf",
+                    FileName = $"matematicas_semana_{weekNum}_A1.pdf",
+                    FileSize = 1024 * (700 + weekNum * 15),
+                    Salon = salon1, 
+                    Tutor = tutor1,
+                    TipoMaterial = TipoMaterial.PDF,
+                    CreatedAt = DateTime.UtcNow 
+                });
+
+                // Video tutorial
+                if (weekNum % 2 == 1) // Semanas impares
+                {
+                    context.Materiales.Add(new Material 
+                    { 
+                        Title = $"Video: Matemáticas Semana {weekNum} - Explicación Paso a Paso", 
+                        Description = $"Tutorial en video explicando los temas de la semana {weekNum}. Duración aprox 30-40 minutos.", 
+                        Week = weekNum,
+                        SemanaId = semana.Id,
+                        Curso = prof1.Cursos.FirstOrDefault() ?? null, 
+                        Ciclo = ciclo, 
+                        FileUrl = $"https://www.youtube.com/watch?v=matematicas_sem{weekNum}",
+                        Salon = salon1, 
+                        Tutor = tutor1,
+                        TipoMaterial = TipoMaterial.Enlace,
+                        CreatedAt = DateTime.UtcNow 
+                    });
+                }
+
+                // Práctica
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Práctica Matemáticas Semana {weekNum}", 
+                    Description = $"Ejercicios prácticos de matemáticas semana {weekNum}. Incluye problemas resueltos y propuestos.", 
+                    Week = weekNum,
+                    SemanaId = semana.Id,
+                    Curso = prof1.Cursos.FirstOrDefault() ?? null, 
+                    Ciclo = ciclo, 
+                    FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonA1/practica_matematicas_{weekNum}.pdf",
+                    FileName = $"practica_matematicas_{weekNum}_A1.pdf",
+                    FileSize = 1024 * 550,
                     Salon = salon1, 
                     Tutor = tutor1,
                     TipoMaterial = TipoMaterial.Documento,
                     CreatedAt = DateTime.UtcNow 
                 });
+
+                // ========== SALON A2 (Tutor Ana Lopez) ==========
+                // Comunicación y Lenguaje
                 context.Materiales.Add(new Material 
                 { 
-                    Title = $"Semana {semana.NumeroSemana} - Matemáticas ({salon2.Nombre})", 
-                    Description = "Apuntes y ejercicios adicionales.", 
-                    Week = semana.NumeroSemana,
+                    Title = $"Comunicación Semana {weekNum} - Comprensión Lectora", 
+                    Description = $"Material de comunicación semana {weekNum}. Técnicas de comprensión, análisis de textos y ejercicios.", 
+                    Week = weekNum,
                     SemanaId = semana.Id,
-                    Curso = prof1.Cursos.FirstOrDefault() ?? null, 
+                    Curso = null, 
                     Ciclo = ciclo, 
-                    FileUrl = null, 
+                    FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonA2/comunicacion_sem{weekNum}.pdf",
+                    FileName = $"comunicacion_semana_{weekNum}_A2.pdf",
+                    FileSize = 1024 * (650 + weekNum * 10),
+                    Salon = salon2, 
+                    Tutor = tutor1,
+                    TipoMaterial = TipoMaterial.PDF,
+                    CreatedAt = DateTime.UtcNow 
+                });
+
+                // Redacción
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Redacción y Ortografía Semana {weekNum}", 
+                    Description = $"Guía de redacción y ortografía semana {weekNum}. Reglas, ejemplos y ejercicios prácticos.", 
+                    Week = weekNum,
+                    SemanaId = semana.Id,
+                    Curso = null, 
+                    Ciclo = ciclo, 
+                    FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonA2/redaccion_sem{weekNum}.pdf",
+                    FileName = $"redaccion_semana_{weekNum}_A2.pdf",
+                    FileSize = 1024 * 480,
                     Salon = salon2, 
                     Tutor = tutor1,
                     TipoMaterial = TipoMaterial.Documento,
                     CreatedAt = DateTime.UtcNow 
                 });
+
+                // ========== SALON B1 (Tutor Marcos Rojas - Inactivo pero con materiales) ==========
+                // Física
                 context.Materiales.Add(new Material 
                 { 
-                    Title = $"Semana {semana.NumeroSemana} - Física ({salon3.Nombre})", 
-                    Description = "Apuntes y laboratorio.", 
-                    Week = semana.NumeroSemana,
+                    Title = $"Física Semana {weekNum} - Mecánica y Cinemática", 
+                    Description = $"Material de física semana {weekNum}. Teoría, fórmulas, problemas resueltos y propuestos.", 
+                    Week = weekNum,
                     SemanaId = semana.Id,
                     Curso = prof2.Cursos.FirstOrDefault() ?? null, 
                     Ciclo = ciclo, 
-                    FileUrl = null, 
+                    FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonB1/fisica_sem{weekNum}.pdf",
+                    FileName = $"fisica_semana_{weekNum}_B1.pdf",
+                    FileSize = 1024 * (750 + weekNum * 20),
                     Salon = salon3, 
                     Tutor = tutor2,
-                    TipoMaterial = TipoMaterial.Documento,
+                    TipoMaterial = TipoMaterial.PDF,
                     CreatedAt = DateTime.UtcNow 
                 });
+
+                // Simuladores (semanas pares)
+                if (weekNum % 2 == 0)
+                {
+                    context.Materiales.Add(new Material 
+                    { 
+                        Title = $"Simulador Física Semana {weekNum}", 
+                        Description = $"Simulador interactivo de física para semana {weekNum}. Visualización de conceptos en tiempo real.", 
+                        Week = weekNum,
+                        SemanaId = semana.Id,
+                        Curso = prof2.Cursos.FirstOrDefault() ?? null, 
+                        Ciclo = ciclo, 
+                        FileUrl = "https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics_es.html",
+                        Salon = salon3, 
+                        Tutor = tutor2,
+                        TipoMaterial = TipoMaterial.Enlace,
+                        CreatedAt = DateTime.UtcNow 
+                    });
+                }
+
+                // ========== SALON B2 (Tutor Marcos Rojas) ==========
+                // Química
                 context.Materiales.Add(new Material 
                 { 
-                    Title = $"Semana {semana.NumeroSemana} - Física ({salon4.Nombre})", 
-                    Description = "Ejercicios y guías.", 
-                    Week = semana.NumeroSemana,
+                    Title = $"Química Semana {weekNum} - Teoría y Práctica", 
+                    Description = $"Material de química semana {weekNum}. Conceptos teóricos, reacciones químicas y ejercicios.", 
+                    Week = weekNum,
                     SemanaId = semana.Id,
                     Curso = prof2.Cursos.FirstOrDefault() ?? null, 
                     Ciclo = ciclo, 
-                    FileUrl = null, 
+                    FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonB2/quimica_sem{weekNum}.pdf",
+                    FileName = $"quimica_semana_{weekNum}_B2.pdf",
+                    FileSize = 1024 * (680 + weekNum * 12),
                     Salon = salon4, 
                     Tutor = tutor2,
-                    TipoMaterial = TipoMaterial.Documento,
+                    TipoMaterial = TipoMaterial.PDF,
                     CreatedAt = DateTime.UtcNow 
                 });
+
+                // Laboratorio virtual
+                context.Materiales.Add(new Material 
+                { 
+                    Title = $"Laboratorio Virtual Química Semana {weekNum}", 
+                    Description = $"Prácticas de laboratorio virtual de química semana {weekNum}. Experimentos simulados.", 
+                    Week = weekNum,
+                    SemanaId = semana.Id,
+                    Curso = prof2.Cursos.FirstOrDefault() ?? null, 
+                    Ciclo = ciclo, 
+                    FileUrl = $"https://labster.com/simulations/quimica-semana-{weekNum}",
+                    Salon = salon4, 
+                    Tutor = tutor2,
+                    TipoMaterial = TipoMaterial.Enlace,
+                    CreatedAt = DateTime.UtcNow 
+                });
+
+                // ========== MATERIALES GENERALES (Todas las semanas) ==========
+                // Cada 3 semanas: Material de repaso para todos los salones
+                if (weekNum % 3 == 0)
+                {
+                    // Repaso Salón A1
+                    context.Materiales.Add(new Material 
+                    { 
+                        Title = $"Repaso Acumulativo Semana {weekNum} - Salón A1", 
+                        Description = $"Repaso de las últimas 3 semanas. Ejercicios integrados y evaluación.", 
+                        Week = weekNum,
+                        SemanaId = semana.Id,
+                        Curso = prof1.Cursos.FirstOrDefault() ?? null, 
+                        Ciclo = ciclo, 
+                        FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonA1/repaso_sem{weekNum}.pdf",
+                        FileName = $"repaso_acumulativo_{weekNum}_A1.pdf",
+                        FileSize = 1024 * 900,
+                        Salon = salon1, 
+                        Tutor = tutor1,
+                        TipoMaterial = TipoMaterial.Documento,
+                        CreatedAt = DateTime.UtcNow 
+                    });
+
+                    // Repaso Salón B1
+                    context.Materiales.Add(new Material 
+                    { 
+                        Title = $"Repaso Acumulativo Semana {weekNum} - Salón B1", 
+                        Description = $"Repaso de las últimas 3 semanas. Problemas integrados de física.", 
+                        Week = weekNum,
+                        SemanaId = semana.Id,
+                        Curso = prof2.Cursos.FirstOrDefault() ?? null, 
+                        Ciclo = ciclo, 
+                        FileUrl = $"Ciclo_2025-II/Semana_{weekNum:D2}/SalonB1/repaso_sem{weekNum}.pdf",
+                        FileName = $"repaso_acumulativo_{weekNum}_B1.pdf",
+                        FileSize = 1024 * 850,
+                        Salon = salon3, 
+                        Tutor = tutor2,
+                        TipoMaterial = TipoMaterial.Documento,
+                        CreatedAt = DateTime.UtcNow 
+                    });
+                }
             }
 
             await context.SaveChangesAsync();
+            logger?.LogInformation("? Materiales creados para TODOS los salones y TODAS las semanas del ciclo");
+
+            // Agregar apoderados de ejemplo
+            var apoderado1 = new Models.Apoderado
+            {
+                AlumnoId = alumnos[0].Id, // Carlos
+                Nombre = "Roberto",
+                Apellido = "Sanchez",
+                DNI = "40123456",
+                Email = "roberto.sanchez@example.com",
+                Telefono = "987654321",
+                Direccion = "Av. Los Olivos 456",
+                Parentesco = "Padre",
+                RecibeNotificaciones = true,
+                FechaRegistro = DateTime.UtcNow
+            };
+
+            var apoderado2 = new Models.Apoderado
+            {
+                AlumnoId = alumnos[2].Id, // Pedro
+                Nombre = "Carmen",
+                Apellido = "Lopez",
+                DNI = "40234567",
+                Email = "carmen.lopez@example.com",
+                Telefono = "987654322",
+                Direccion = "Jr. Las Flores 789",
+                Parentesco = "Madre",
+                RecibeNotificaciones = true,
+                FechaRegistro = DateTime.UtcNow
+            };
+
+            var apoderado3 = new Models.Apoderado
+            {
+                AlumnoId = alumnos[0].Id, // Carlos (segunda apoderada - madre)
+                Nombre = "María",
+                Apellido = "Sanchez",
+                DNI = "40123457",
+                Email = "maria.sanchez@example.com",
+                Telefono = "987654323",
+                Direccion = "Av. Los Olivos 456",
+                Parentesco = "Madre",
+                RecibeNotificaciones = true,
+                FechaRegistro = DateTime.UtcNow
+            };
+
+            context.Apoderados.AddRange(apoderado1, apoderado2, apoderado3);
+            await context.SaveChangesAsync();
+            logger?.LogInformation("? Apoderados de ejemplo creados");
+
+            // Crear usuarios Identity para apoderados
+            foreach (var apod in new[] { apoderado1, apoderado2, apoderado3 })
+            {
+                var apoderadoUser = await userManager.FindByEmailAsync(apod.Email);
+                if (apoderadoUser == null)
+                {
+                    apoderadoUser = new IdentityUser { Email = apod.Email, UserName = apod.Email, EmailConfirmed = true };
+                    await userManager.CreateAsync(apoderadoUser, "Apoderado123!");
+                    await userManager.AddToRoleAsync(apoderadoUser, "Apoderado");
+                    logger?.LogInformation("Created apoderado user: {Email}", apod.Email);
+                }
+            }
+
+            // Agregar notas de ejemplo para algunos alumnos
+            var notasCarlos = new List<Nota>
+            {
+                new Nota
+                {
+                    AlumnoId = alumnos[0].Id,
+                    CicloId = ciclo.Id,
+                    SalonId = salon1.Id,
+                    Materia = "Matemáticas",
+                    Descripcion = "Examen Parcial",
+                    Calificacion = 15.5m,
+                    Peso = 1.0m,
+                    TipoEvaluacion = TipoEvaluacion.ExamenParcial,
+                    FechaEvaluacion = DateTime.UtcNow.AddDays(-10),
+                    RegistradoPor = "tutor@academia.local",
+                    FechaRegistro = DateTime.UtcNow.AddDays(-10),
+                    IsActive = true
+                },
+                new Nota
+                {
+                    AlumnoId = alumnos[0].Id,
+                    CicloId = ciclo.Id,
+                    SalonId = salon1.Id,
+                    Materia = "Comunicación",
+                    Descripcion = "Trabajo Final",
+                    Calificacion = 17.0m,
+                    Peso = 1.0m,
+                    TipoEvaluacion = TipoEvaluacion.Proyecto,
+                    FechaEvaluacion = DateTime.UtcNow.AddDays(-5),
+                    RegistradoPor = "tutor@academia.local",
+                    FechaRegistro = DateTime.UtcNow.AddDays(-5),
+                    IsActive = true
+                },
+                new Nota
+                {
+                    AlumnoId = alumnos[0].Id,
+                    CicloId = ciclo.Id,
+                    SalonId = salon1.Id,
+                    Materia = "Ciencias",
+                    Descripcion = "Práctica de Laboratorio",
+                    Calificacion = 16.0m,
+                    Peso = 1.0m,
+                    TipoEvaluacion = TipoEvaluacion.Practica,
+                    FechaEvaluacion = DateTime.UtcNow.AddDays(-3),
+                    RegistradoPor = "tutor@academia.local",
+                    FechaRegistro = DateTime.UtcNow.AddDays(-3),
+                    IsActive = true
+                }
+            };
+
+            context.Notas.AddRange(notasCarlos);
+            
+            // Calcular y actualizar promedio de Carlos
+            var promedioCarlos = notasCarlos.Average(n => n.Calificacion);
+            alumnos[0].PromedioGeneral = promedioCarlos;
+            context.Alumnos.Update(alumnos[0]);
+            
+            await context.SaveChangesAsync();
+            logger?.LogInformation("? Notas de ejemplo creadas y promedio calculado");
         }
     }
 
@@ -698,7 +1008,10 @@ public static class DbInitializer
             ("profesor@academia.local", "Profesor", "Prof123!"),
             ("luis@academia.local", "Profesor", "Prof123!"),
             ("tutor@academia.local", "Tutor", "Tutor123!"),
-            ("marcos@academia.local", "Tutor", "Tutor123!")
+            ("marcos@academia.local", "Tutor", "Tutor123!"),
+            ("roberto.sanchez@example.com", "Apoderado", "Apoderado123!"),
+            ("carmen.lopez@example.com", "Apoderado", "Apoderado123!"),
+            ("maria.sanchez@example.com", "Apoderado", "Apoderado123!")
         };
 
         foreach (var s in samples)
@@ -798,5 +1111,144 @@ public static class DbInitializer
         {
             logger?.LogWarning(ex, "Failed to ensure tutors domain data");
         }
+    }
+
+    private static async Task EnsureConfiguracionPasarelaTableAsync(AcademicContext context, ILogger? logger)
+    {
+        var tableExists = await TableExistsAsync(context, "ConfiguracionPasarelas");
+        if (tableExists) 
+        {
+            // Actualizar configuración por defecto a Culqi si no está configurado
+            try
+            {
+                var config = await context.ConfiguracionPasarelas.FirstOrDefaultAsync();
+                if (config == null)
+                {
+                    // Si no existe configuración, crear una nueva con Culqi
+                    config = new ConfiguracionPasarela
+                    {
+                        PasarelaActiva = TipoPasarela.SinPasarela,
+                        UltimaModificacion = DateTime.UtcNow,
+                        ModificadoPor = "SYSTEM - Default Sin Pasarela"
+                    };
+                    context.ConfiguracionPasarelas.Add(config);
+                    await context.SaveChangesAsync();
+                    logger?.LogInformation("? Configuración de pasarela creada con Sin Pasarela por defecto.");
+                }
+                else if (config.PasarelaActiva == TipoPasarela.Culqi)
+                {
+                    // Si es Culqi y está caída, cambiar a SinPasarela
+                    config.PasarelaActiva = TipoPasarela.SinPasarela;
+                    config.UltimaModificacion = DateTime.UtcNow;
+                    config.ModificadoPor = "SYSTEM - Auto-config Sin Pasarela (Culqi caída)";
+                    await context.SaveChangesAsync();
+                    logger?.LogInformation("? Configuración de pasarela cambiada a Sin Pasarela por problemas con Culqi.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "No se pudo actualizar configuración de pasarela a Culqi");
+            }
+            return;
+        }
+
+        logger?.LogInformation("ConfiguracionPasarelas table missing — creating table.");
+
+        var createSql = @"CREATE TABLE [ConfiguracionPasarelas](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [PasarelaActiva] INT NOT NULL DEFAULT(0),
+    [UltimaModificacion] DATETIME2 NOT NULL DEFAULT(GETUTCDATE()),
+    [ModificadoPor] NVARCHAR(256) NULL
+);";
+        await context.Database.ExecuteSqlRawAsync(createSql);
+
+        // Insertar configuración por defecto (SinPasarela = 0)
+        var insertDefault = "INSERT INTO [ConfiguracionPasarelas] (PasarelaActiva, UltimaModificacion, ModificadoPor) VALUES (0, GETUTCDATE(), 'SYSTEM - Default Sin Pasarela');";
+        await context.Database.ExecuteSqlRawAsync(insertDefault);
+        
+        logger?.LogInformation("? ConfiguracionPasarela table created with Sin Pasarela as default payment gateway.");
+    }
+
+    private static async Task EnsureNotasTableAsync(AcademicContext context, ILogger? logger)
+    {
+        var tableExists = await TableExistsAsync(context, "Notas");
+        if (tableExists) 
+        {
+            // Verificar si existe la columna PromedioGeneral en Alumnos
+            var hasPromedioCol = await ColumnExistsAsync(context, "Alumnos", "PromedioGeneral");
+            if (!hasPromedioCol)
+            {
+                logger?.LogInformation("Agregando columna PromedioGeneral a Alumnos...");
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE [Alumnos] ADD [PromedioGeneral] decimal(5,2) NULL;");
+                logger?.LogInformation("? Columna PromedioGeneral agregada.");
+            }
+            return;
+        }
+
+        logger?.LogInformation("Notas table missing — creating table.");
+
+        var createSql = @"CREATE TABLE [Notas](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [AlumnoId] INT NOT NULL,
+    [CicloId] INT NOT NULL,
+    [SalonId] INT NULL,
+    [Materia] NVARCHAR(200) NOT NULL,
+    [Descripcion] NVARCHAR(500) NULL,
+    [Calificacion] DECIMAL(5,2) NOT NULL,
+    [Peso] DECIMAL(5,2) NOT NULL DEFAULT(1.0),
+    [TipoEvaluacion] INT NOT NULL DEFAULT(0),
+    [FechaEvaluacion] DATETIME2 NOT NULL,
+    [RegistradoPor] NVARCHAR(256) NULL,
+    [FechaRegistro] DATETIME2 NOT NULL DEFAULT(GETUTCDATE()),
+    [Observaciones] NVARCHAR(MAX) NULL,
+    [IsActive] BIT NOT NULL DEFAULT(1),
+    CONSTRAINT FK_Notas_Alumnos FOREIGN KEY (AlumnoId) REFERENCES [Alumnos](Id) ON DELETE CASCADE,
+    CONSTRAINT FK_Notas_Ciclos FOREIGN KEY (CicloId) REFERENCES [Ciclos](Id) ON DELETE CASCADE,
+    CONSTRAINT FK_Notas_Salones FOREIGN KEY (SalonId) REFERENCES [Salones](Id) ON DELETE SET NULL
+);";
+        await context.Database.ExecuteSqlRawAsync(createSql);
+
+        // Crear índices para mejorar performance
+        var createIndexes = @"
+CREATE INDEX IX_Notas_AlumnoId ON Notas(AlumnoId);
+CREATE INDEX IX_Notas_CicloId ON Notas(CicloId);
+CREATE INDEX IX_Notas_FechaEvaluacion ON Notas(FechaEvaluacion);
+";
+        await context.Database.ExecuteSqlRawAsync(createIndexes);
+
+        // Agregar columna PromedioGeneral a Alumnos si no existe
+        var hasPromedioGeneral = await ColumnExistsAsync(context, "Alumnos", "PromedioGeneral");
+        if (!hasPromedioGeneral)
+        {
+            await context.Database.ExecuteSqlRawAsync("ALTER TABLE [Alumnos] ADD [PromedioGeneral] decimal(5,2) NULL;");
+        }
+        
+        logger?.LogInformation("? Notas table created with indexes and PromedioGeneral column added to Alumnos.");
+    }
+
+    private static async Task EnsureApoderadosTableAsync(AcademicContext context, ILogger? logger)
+    {
+        var tableExists = await TableExistsAsync(context, "Apoderados");
+        if (tableExists) return;
+
+        logger?.LogInformation("Apoderados table missing — creating table.");
+
+        var createSql = @"CREATE TABLE [Apoderados](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [AlumnoId] INT NOT NULL,
+    [Nombre] NVARCHAR(100) NOT NULL,
+    [Apellido] NVARCHAR(100) NOT NULL,
+    [DNI] NVARCHAR(20) NOT NULL,
+    [Email] NVARCHAR(256) NOT NULL,
+    [Telefono] NVARCHAR(20) NOT NULL,
+    [Direccion] NVARCHAR(200) NULL,
+    [Parentesco] NVARCHAR(50) NULL,
+    [RecibeNotificaciones] BIT NOT NULL DEFAULT(1),
+    [FechaRegistro] DATETIME2 NOT NULL DEFAULT(GETUTCDATE()),
+    CONSTRAINT FK_Apoderados_Alumnos FOREIGN KEY (AlumnoId) REFERENCES [Alumnos](Id) ON DELETE CASCADE
+);";
+        await context.Database.ExecuteSqlRawAsync(createSql);
+        
+        logger?.LogInformation("? Apoderados table created.");
     }
 }

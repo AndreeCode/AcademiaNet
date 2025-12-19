@@ -1,0 +1,315 @@
+@page
+@model Academic.Pages.Admin.GestionarNotasModel
+@{
+    ViewData["Title"] = "Gestionar Notas";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-clipboard-check"></i> Gestionar Notas de Alumnos</h2>
+                <a asp-page="/Admin/Dashboard" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                </a>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.MensajeExito))
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    @Model.MensajeExito
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.MensajeError))
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    @Model.MensajeError
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Filtros -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtrar Alumno y Ciclo</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Alumno</label>
+                                <select name="AlumnoIdFiltro" class="form-select" onchange="this.form.submit()">
+                                    <option value="">-- Seleccionar Alumno --</option>
+                                    @foreach (var alumno in Model.Alumnos)
+                                    {
+                                        <option value="@alumno.Id" selected="@(Model.AlumnoIdFiltro == alumno.Id)">
+                                            @alumno.Apellido, @alumno.Nombre 
+                                            @if (alumno.Salon != null)
+                                            {
+                                                <text>- Salón: @alumno.Salon.Nombre</text>
+                                            }
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Ciclo</label>
+                                <select name="CicloIdFiltro" class="form-select" onchange="this.form.submit()">
+                                    <option value="">-- Todos los Ciclos --</option>
+                                    @foreach (var ciclo in Model.Ciclos)
+                                    {
+                                        <option value="@ciclo.Id" selected="@(Model.CicloIdFiltro == ciclo.Id)">
+                                            @ciclo.Nombre
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.AlumnoSeleccionado != null)
+            {
+                <!-- Información del Alumno -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge"></i> 
+                            @Model.AlumnoSeleccionado.Nombre @Model.AlumnoSeleccionado.Apellido
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Email:</strong> @Model.AlumnoSeleccionado.Email
+                            </div>
+                            <div class="col-md-3">
+                                <strong>DNI:</strong> @(Model.AlumnoSeleccionado.DNI ?? "N/A")
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Salón:</strong> @(Model.AlumnoSeleccionado.Salon?.Nombre ?? "N/A")
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Promedio:</strong> 
+                                @if (Model.PromedioCalculado.HasValue)
+                                {
+                                    <span class="badge bg-@(Model.PromedioCalculado >= 13 ? "success" : Model.PromedioCalculado >= 11 ? "warning" : "danger") fs-6">
+                                        @Model.PromedioCalculado.Value.ToString("F2")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Sin notas</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registrar Nueva Nota -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Registrar Nueva Nota</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" asp-page-handler="RegistrarNota">
+                            <input type="hidden" asp-for="Nota.AlumnoId" value="@Model.AlumnoSeleccionado.Id" />
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Nota.CicloId" class="form-label fw-bold">Ciclo *</label>
+                                    <select asp-for="Nota.CicloId" class="form-select" required>
+                                        <option value="">-- Seleccionar --</option>
+                                        @foreach (var ciclo in Model.Ciclos)
+                                        {
+                                            <option value="@ciclo.Id" selected="@(Model.CicloIdFiltro == ciclo.Id)">
+                                                @ciclo.Nombre
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Nota.Materia" class="form-label fw-bold">Materia *</label>
+                                    <input asp-for="Nota.Materia" class="form-control" 
+                                           placeholder="Ej: Matemáticas" required />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Nota.TipoEvaluacion" class="form-label fw-bold">Tipo *</label>
+                                    <select asp-for="Nota.TipoEvaluacion" class="form-select" required>
+                                        <option value="0">Práctica</option>
+                                        <option value="1">Tarea</option>
+                                        <option value="2">Examen Parcial</option>
+                                        <option value="3">Examen Final</option>
+                                        <option value="4">Proyecto</option>
+                                        <option value="5">Exposición</option>
+                                        <option value="6">Participación</option>
+                                        <option value="7">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label asp-for="Nota.Calificacion" class="form-label fw-bold">Nota (0-20) *</label>
+                                    <input asp-for="Nota.Calificacion" type="number" step="0.01" 
+                                           min="0" max="20" class="form-control" required />
+                                    <div class="form-text">Escala vigesimal (0-20)</div>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label asp-for="Nota.Peso" class="form-label fw-bold">Peso *</label>
+                                    <input asp-for="Nota.Peso" type="number" step="0.1" 
+                                           min="0.1" max="10" value="1.0" class="form-control" required />
+                                    <div class="form-text">Para cálculo de promedio</div>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label asp-for="Nota.FechaEvaluacion" class="form-label fw-bold">Fecha *</label>
+                                    <input asp-for="Nota.FechaEvaluacion" type="date" 
+                                           value="@DateTime.Now.ToString("yyyy-MM-dd")" 
+                                           class="form-control" required />
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label asp-for="Nota.SalonId" class="form-label fw-bold">Salón</label>
+                                    <select asp-for="Nota.SalonId" class="form-select">
+                                        <option value="">-- Opcional --</option>
+                                        @foreach (var salon in Model.Salones)
+                                        {
+                                            <option value="@salon.Id" 
+                                                    selected="@(Model.AlumnoSeleccionado.SalonId == salon.Id)">
+                                                @salon.Nombre - @salon.Sede?.Nombre
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Nota.Descripcion" class="form-label fw-bold">Descripción</label>
+                                    <input asp-for="Nota.Descripcion" class="form-control" 
+                                           placeholder="Ej: Examen de mitad de ciclo" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Nota.Observaciones" class="form-label fw-bold">Observaciones</label>
+                                    <input asp-for="Nota.Observaciones" class="form-control" 
+                                           placeholder="Notas adicionales" />
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-save"></i> Registrar Nota
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Notas Registradas -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-check"></i> 
+                            Notas Registradas (@Model.NotasRegistradas.Count)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.NotasRegistradas.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Materia</th>
+                                            <th>Tipo</th>
+                                            <th>Descripción</th>
+                                            <th>Nota</th>
+                                            <th>Peso</th>
+                                            <th>Ciclo</th>
+                                            <th>Registrado Por</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var nota in Model.NotasRegistradas)
+                                        {
+                                            <tr>
+                                                <td>@nota.FechaEvaluacion.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                                <td><strong>@nota.Materia</strong></td>
+                                                <td>
+                                                    <span class="badge bg-secondary">
+                                                        @nota.TipoEvaluacion.ToString()
+                                                    </span>
+                                                </td>
+                                                <td>@(nota.Descripcion ?? "-")</td>
+                                                <td>
+                                                    <span class="badge bg-@(nota.Calificacion >= 13 ? "success" : nota.Calificacion >= 11 ? "warning" : "danger") fs-6">
+                                                        @nota.Calificacion.ToString("F2")
+                                                    </span>
+                                                </td>
+                                                <td>@nota.Peso.ToString("F1")</td>
+                                                <td>@nota.Ciclo?.Nombre</td>
+                                                <td><small>@(nota.RegistradoPor ?? "N/A")</small></td>
+                                                <td>
+                                                    <form method="post" asp-page-handler="EliminarNota" 
+                                                          onsubmit="return confirm('¿Está seguro de eliminar esta nota?');"
+                                                          style="display:inline;">
+                                                        <input type="hidden" name="notaId" value="@nota.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <td colspan="4" class="text-end"><strong>PROMEDIO:</strong></td>
+                                            <td colspan="5">
+                                                @if (Model.PromedioCalculado.HasValue)
+                                                {
+                                                    <span class="badge bg-@(Model.PromedioCalculado >= 13 ? "success" : Model.PromedioCalculado >= 11 ? "warning" : "danger") fs-5">
+                                                        @Model.PromedioCalculado.Value.ToString("F2")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin promedio</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> 
+                                No hay notas registradas para este alumno en el ciclo seleccionado.
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Seleccione un alumno</strong> del filtro superior para ver y gestionar sus notas.
+                </div>
+            }
+        </div>
+    </div>
+</div>

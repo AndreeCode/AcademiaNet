@@ -31,8 +31,15 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 
 builder.Services.AddRazorPages();
 
+// HttpClient for Culqi
+builder.Services.AddHttpClient("Culqi");
+
+// Payment services
 builder.Services.Configure<MercadoPagoOptions>(builder.Configuration.GetSection("MercadoPago"));
+builder.Services.Configure<CulqiOptions>(builder.Configuration.GetSection("Culqi"));
 builder.Services.AddScoped<MercadoPagoService>();
+builder.Services.AddScoped<CulqiService>();
+builder.Services.AddScoped<PdfService>();
 builder.Services.AddScoped<FileStorageService>();
 
 var app = builder.Build();
@@ -45,7 +52,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-// Servir archivos del FileStorage
+// Servir archivos del FileStorage SIN autenticación requerida
 var fileStoragePath = Path.Combine(app.Environment.ContentRootPath, "FileStorage");
 if (!Directory.Exists(fileStoragePath))
 {
@@ -55,17 +62,8 @@ if (!Directory.Exists(fileStoragePath))
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(fileStoragePath),
-    RequestPath = "/files",
-    OnPrepareResponse = ctx =>
-    {
-        // Solo permitir acceso a usuarios autenticados
-        if (!ctx.Context.User.Identity?.IsAuthenticated ?? true)
-        {
-            ctx.Context.Response.StatusCode = 401;
-            ctx.Context.Response.ContentLength = 0;
-            ctx.Context.Response.Body = Stream.Null;
-        }
-    }
+    RequestPath = "/uploads"
+    // Eliminada la verificación de autenticación para permitir acceso libre a archivos
 });
 
 app.UseRouting();

@@ -1,0 +1,153 @@
+@page
+@model Academic.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Acceso Denegado";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Acceso Denegado
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-4">
+                        <i class="bi bi-shield-x" style="font-size: 5rem; color: #dc3545;"></i>
+                        <h3 class="mt-4">No tienes permiso para acceder a esta página</h3>
+                        <p class="text-muted mt-3">
+                            Lo sentimos, no tienes los permisos necesarios para ver este contenido.
+                        </p>
+
+                        @if (!string.IsNullOrEmpty(Model.ReturnUrl))
+                        {
+                            <div class="alert alert-info mt-4">
+                                <strong>Página solicitada:</strong> @Model.ReturnUrl
+                            </div>
+                        }
+
+                        <div class="mt-4">
+                            <h5>¿Qué puedes hacer?</h5>
+                            <ul class="list-unstyled mt-3">
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success"></i> 
+                                    Verificar que iniciaste sesión con la cuenta correcta
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success"></i> 
+                                    Contactar al administrador si crees que deberías tener acceso
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success"></i> 
+                                    Volver a tu dashboard correspondiente
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-primary me-2">
+                                <i class="bi bi-house-fill"></i> Ir al Inicio
+                            </a>
+                            
+                            @if (User.Identity?.IsAuthenticated ?? false)
+                            {
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <a href="/Admin/Dashboard" class="btn btn-success">
+                                        <i class="bi bi-speedometer2"></i> Mi Dashboard
+                                    </a>
+                                }
+                                else if (User.IsInRole("Coordinador"))
+                                {
+                                    <a href="/Coordinador/Dashboard" class="btn btn-success">
+                                        <i class="bi bi-speedometer2"></i> Mi Dashboard
+                                    </a>
+                                }
+                                else if (User.IsInRole("Profesor"))
+                                {
+                                    <a href="/Profesor/Dashboard" class="btn btn-success">
+                                        <i class="bi bi-speedometer2"></i> Mi Dashboard
+                                    </a>
+                                }
+                                else if (User.IsInRole("Tutor"))
+                                {
+                                    <a href="/Tutor/Dashboard" class="btn btn-success">
+                                        <i class="bi bi-speedometer2"></i> Mi Dashboard
+                                    </a>
+                                }
+                                else if (User.IsInRole("Alumno"))
+                                {
+                                    <a href="/Alumno/Dashboard" class="btn btn-success">
+                                        <i class="bi bi-speedometer2"></i> Mi Dashboard
+                                    </a>
+                                }
+                                else if (User.IsInRole("Apoderado"))
+                                {
+                                    <a href="/Apoderado/Dashboard" class="btn btn-success">
+                                        <i class="bi bi-speedometer2"></i> Mi Dashboard
+                                    </a>
+                                }
+                            }
+                            else
+                            {
+                                <a href="/Account/Login" class="btn btn-warning">
+                                    <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted text-center">
+                    <small>
+                        Si el problema persiste, contacta al administrador del sistema.
+                    </small>
+                </div>
+            </div>
+
+            <!-- Información de roles -->
+            @if (User.Identity?.IsAuthenticated ?? false)
+            {
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6><i class="bi bi-person-badge"></i> Información de tu cuenta</h6>
+                        <p class="mb-1"><strong>Usuario:</strong> @User.Identity.Name</p>
+                        <p class="mb-0">
+                            <strong>Roles asignados:</strong> 
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <span class="badge bg-danger">Admin</span>
+                            }
+                            @if (User.IsInRole("Coordinador"))
+                            {
+                                <span class="badge bg-info">Coordinador</span>
+                            }
+                            @if (User.IsInRole("Profesor"))
+                            {
+                                <span class="badge bg-primary">Profesor</span>
+                            }
+                            @if (User.IsInRole("Tutor"))
+                            {
+                                <span class="badge bg-success">Tutor</span>
+                            }
+                            @if (User.IsInRole("Alumno"))
+                            {
+                                <span class="badge bg-warning text-dark">Alumno</span>
+                            }
+                            @if (User.IsInRole("Apoderado"))
+                            {
+                                <span class="badge bg-secondary">Apoderado</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

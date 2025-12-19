@@ -1,0 +1,124 @@
+@page
+@model Academic.Pages.Admin.GenerarReportesModel
+@{
+    ViewData["Title"] = "Generar Reportes PDF";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-file-earmark-pdf-fill"></i> Generar Reportes PDF</h2>
+            <p class="text-muted">Descarga reportes en formato PDF</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-pdf"></i> Configuración del Reporte</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="GenerarPdf">
+                        <div class="mb-4">
+                            <label asp-for="CicloId" class="form-label fw-bold">
+                                <i class="bi bi-calendar-check"></i> Seleccione el Ciclo
+                            </label>
+                            <select asp-for="CicloId" asp-items="Model.CiclosSelectList" class="form-select form-select-lg">
+                                <option value="">Seleccione un ciclo</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="TipoReporte" class="form-label fw-bold">
+                                <i class="bi bi-file-text"></i> Tipo de Reporte
+                            </label>
+                            <div class="list-group">
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-2" type="radio" asp-for="TipoReporte" value="Matriculados" checked>
+                                    <strong>Lista de Matriculados</strong>
+                                    <p class="mb-0 small text-muted">Reporte completo con todos los alumnos matriculados y pagados del ciclo seleccionado</p>
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-2" type="radio" asp-for="TipoReporte" value="Estadisticas">
+                                    <strong>Estadísticas del Ciclo</strong>
+                                    <p class="mb-0 small text-muted">Resumen estadístico con totales, recaudación y vacantes del ciclo</p>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-download"></i> Descargar Reporte PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle"></i> Información</h6>
+                    <ul class="small mb-0">
+                        <li><strong>Lista de Matriculados:</strong> Incluye nombre, DNI, email y fecha de pago</li>
+                        <li><strong>Estadísticas:</strong> Incluye totales, recaudación, vacantes disponibles y más</li>
+                        <li>Los reportes se generan en tiempo real con la información actualizada</li>
+                        <li>Solo se incluyen matrículas con estado "Pagado"</li>
+                        <li>El archivo PDF se descargará automáticamente</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Resumen de ciclos -->
+            @if (Model.Ciclos.Any())
+            {
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-list-ul"></i> Ciclos Disponibles</h6>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        @foreach (var ciclo in Model.Ciclos)
+                        {
+                            var matriculados = ciclo.Matriculas?.Count(m => m.EstadoPago == EstadoPago.Pagado) ?? 0;
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@ciclo.Nombre</strong>
+                                        <br />
+                                        <small class="text-muted">
+                                            @ciclo.FechaInicio.ToString("dd/MM/yyyy") - @ciclo.FechaFin.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary">@matriculados matriculados</span>
+                                        @if (ciclo.Vacantes > 0)
+                                        {
+                                            var disponibles = ciclo.Vacantes - matriculados;
+                                            <br />
+                                            <span class="badge @(disponibles > 0 ? "bg-success" : "bg-danger") mt-1">
+                                                @disponibles vacantes
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

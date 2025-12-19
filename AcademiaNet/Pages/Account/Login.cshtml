@@ -10,7 +10,16 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <div class="text-center mb-4">
-                    <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-login" onerror="this.src='https://via.placeholder.com/150x150/E30613/FFFFFF?text=ACADEMIA+ZOE'" />
+                    <img src="~/images/logo-zoe.svg" alt="Academia Zoe" class="logo-login" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                    <div style="display:none; color: #800020; font-size: 24px; font-weight: bold;">
+                        <div style="width: 150px; height: 150px; margin: 0 auto; background: #800020; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                            <div>
+                                <div style="font-size: 36px;">ZOE</div>
+                                <div style="font-size: 12px; margin-top: 5px;">ACADEMIA</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <h3 class="mb-3 text-center">Iniciar sesión</h3>
                 <partial name="_ValidationSummary" />

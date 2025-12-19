@@ -1,0 +1,177 @@
+@page
+@model Academic.Pages.Admin.ConfigurarPasarelaModel
+@{
+    ViewData["Title"] = "Configurar Pasarela de Pago";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-credit-card"></i> Configurar Pasarela de Pago
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.MensajeExito))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill"></i> @Model.MensajeExito
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.MensajeError))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> @Model.MensajeError
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Importante:</strong> Solo puede estar activa una pasarela a la vez. 
+                        Los cambios afectarán a todas las nuevas matrículas.
+                    </div>
+
+                    @if (Model.ConfiguracionActual != null)
+                    {
+                        <div class="alert alert-secondary">
+                            <h6 class="mb-2">
+                                <i class="bi bi-clock-history"></i> Configuración Actual:
+                            </h6>
+                            <p class="mb-1">
+                                <strong>Pasarela Activa:</strong> 
+                                @switch (Model.ConfiguracionActual.PasarelaActiva)
+                                {
+                                    case Academic.Models.TipoPasarela.SinPasarela:
+                                        <span class="badge bg-secondary">Sin Pasarela (Manual)</span>
+                                        break;
+                                    case Academic.Models.TipoPasarela.MercadoPago:
+                                        <span class="badge bg-success">MercadoPago</span>
+                                        break;
+                                    case Academic.Models.TipoPasarela.Culqi:
+                                        <span class="badge bg-info">Culqi</span>
+                                        break;
+                                }
+                            </p>
+                            <p class="mb-1">
+                                <strong>Última Modificación:</strong> 
+                                @Model.ConfiguracionActual.UltimaModificacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                            @if (!string.IsNullOrEmpty(Model.ConfiguracionActual.ModificadoPor))
+                            {
+                                <p class="mb-0">
+                                    <strong>Modificado Por:</strong> @Model.ConfiguracionActual.ModificadoPor
+                                </p>
+                            }
+                        </div>
+                    }
+
+                    <form method="post">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Selecciona la pasarela de pago activa:</label>
+
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="PasarelaSeleccionada" 
+                                               id="sinPasarela" value="0" 
+                                               checked="@(Model.PasarelaSeleccionada == Academic.Models.TipoPasarela.SinPasarela)">
+                                        <label class="form-check-label" for="sinPasarela">
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-file-earmark-text"></i> Sin Pasarela (Matrícula Manual)
+                                            </h6>
+                                            <p class="text-muted small mb-0">
+                                                Los alumnos se registran pero deben esperar aprobación manual del pago 
+                                                por un Admin o Tutor. No tienen acceso a materiales hasta que se apruebe el pago.
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="PasarelaSeleccionada" 
+                                               id="mercadoPago" value="1" 
+                                               checked="@(Model.PasarelaSeleccionada == Academic.Models.TipoPasarela.MercadoPago)">
+                                        <label class="form-check-label" for="mercadoPago">
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-credit-card-2-front"></i> MercadoPago
+                                            </h6>
+                                            <p class="text-muted small mb-0">
+                                                Pago automático mediante MercadoPago. Acepta tarjetas de crédito/débito, 
+                                                pagos en efectivo y más. El registro y acceso se habilita automáticamente 
+                                                después del pago exitoso.
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="PasarelaSeleccionada" 
+                                               id="culqi" value="2" 
+                                               checked="@(Model.PasarelaSeleccionada == Academic.Models.TipoPasarela.Culqi)">
+                                        <label class="form-check-label" for="culqi">
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-wallet2"></i> Culqi
+                                            </h6>
+                                            <p class="text-muted small mb-0">
+                                                Pago automático mediante Culqi. Acepta tarjetas de crédito/débito, Yape, 
+                                                PagoEfectivo, billeteras móviles y Cuotéalo. El registro y acceso se 
+                                                habilita automáticamente después del pago exitoso.
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                            <a asp-page="/Admin/Dashboard" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Guardar Configuración
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Notas Importantes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li class="mb-2">
+                            <strong>Sin Pasarela:</strong> Los alumnos no podrán acceder a materiales, horarios ni 
+                            contenido del ciclo hasta que un Admin/Tutor apruebe manualmente su pago.
+                        </li>
+                        <li class="mb-2">
+                            <strong>MercadoPago y Culqi:</strong> Los alumnos obtendrán acceso inmediato después 
+                            de completar el pago exitosamente.
+                        </li>
+                        <li class="mb-2">
+                            Las credenciales de MercadoPago y Culqi deben estar configuradas correctamente en 
+                            <code>appsettings.json</code> para que funcionen.
+                        </li>
+                        <li>
+                            Puedes cambiar de pasarela en cualquier momento, pero solo afectará a las nuevas matrículas.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

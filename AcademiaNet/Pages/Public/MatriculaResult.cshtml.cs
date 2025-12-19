@@ -121,6 +121,14 @@ public class MatriculaResultModel : PageModel
                     _context.Matriculas.Add(matricula);
                     await _context.SaveChangesAsync();
 
+                    // Decrementar vacantes
+                    if (ciclo.Vacantes > 0)
+                    {
+                        ciclo.Vacantes--;
+                        _context.Ciclos.Update(ciclo);
+                        await _context.SaveChangesAsync();
+                    }
+
                     // 5. Crear usuario Identity
                     var identityUser = new IdentityUser
                     {

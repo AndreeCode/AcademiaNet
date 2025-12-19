@@ -1,0 +1,238 @@
+@page
+@model Academic.Pages.Tutor.AprobarMatriculasModel
+@{
+    ViewData["Title"] = "Aprobar Matrículas";
+}
+
+<div class="container-fluid py-4">
+    <h2><i class="bi bi-check-circle"></i> Aprobar Matrículas Pendientes</h2>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.TutorActual == null)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle"></i>
+            No se encontró información del tutor.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge"></i> Mis Salones Disponibles
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TutorActual.TutorSalones.Any())
+                {
+                    <div class="row">
+                        @foreach (var ts in Model.TutorActual.TutorSalones)
+                        {
+                            if (ts.Salon != null)
+                            {
+                                <div class="col-md-3">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="bi bi-door-closed"></i> @ts.Salon.Nombre
+                                            </h6>
+                                            <p class="card-text small mb-0">
+                                                <i class="bi bi-building"></i> @ts.Salon.Sede?.Nombre
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No tienes salones asignados.</p>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-hourglass-split"></i> 
+                    Matrículas Pendientes de Aprobación 
+                    <span class="badge bg-danger">@Model.MatriculasPendientes.Count</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.MatriculasPendientes.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th>Email</th>
+                                    <th>DNI</th>
+                                    <th>Ciclo</th>
+                                    <th>Monto</th>
+                                    <th>Fecha Solicitud</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var matricula in Model.MatriculasPendientes)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@matricula.Alumno?.Nombre @matricula.Alumno?.Apellido</strong>
+                                        </td>
+                                        <td>@matricula.Alumno?.Email</td>
+                                        <td>@matricula.Alumno?.DNI</td>
+                                        <td>@matricula.Ciclo?.Nombre</td>
+                                        <td>
+                                            <strong>@matricula.Moneda @matricula.Monto.ToString("N2")</strong>
+                                        </td>
+                                        <td>@matricula.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-success" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#aprobarModal@(matricula.Id)">
+                                                <i class="bi bi-check-lg"></i> Aprobar
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#rechazarModal@(matricula.Id)">
+                                                <i class="bi bi-x-lg"></i> Rechazar
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Modal Aprobar -->
+                                    <div class="modal fade" id="aprobarModal@(matricula.Id)" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-success text-white">
+                                                    <h5 class="modal-title">Aprobar Matrícula</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" asp-page-handler="Aprobar">
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="matriculaId" value="@matricula.Id" />
+                                                        
+                                                        <div class="alert alert-info">
+                                                            <strong>Estudiante:</strong> @matricula.Alumno?.Nombre @matricula.Alumno?.Apellido<br />
+                                                            <strong>Ciclo:</strong> @matricula.Ciclo?.Nombre<br />
+                                                            <strong>Monto:</strong> @matricula.Moneda @matricula.Monto.ToString("N2")
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Asignar a Salón *</label>
+                                                            <select name="salonId" class="form-select" required>
+                                                                <option value="">Seleccione un salón</option>
+                                                                @foreach (var item in Model.Salones)
+                                                                {
+                                                                    <option value="@item.Value">@item.Text</option>
+                                                                }
+                                                            </select>
+                                                            <small class="text-muted">
+                                                                El estudiante será asignado a este salón y sede automáticamente.
+                                                            </small>
+                                                        </div>
+
+                                                        <div class="alert alert-warning">
+                                                            <i class="bi bi-exclamation-triangle"></i>
+                                                            Al aprobar, se decrementarán las vacantes del ciclo.
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-success">
+                                                            <i class="bi bi-check-lg"></i> Aprobar Matrícula
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal Rechazar -->
+                                    <div class="modal fade" id="rechazarModal@(matricula.Id)" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title">Rechazar Matrícula</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" asp-page-handler="Rechazar">
+                                                    <div class="modal-body">
+                                                        <input type="hidden" name="matriculaId" value="@matricula.Id" />
+                                                        
+                                                        <div class="alert alert-warning">
+                                                            <strong>Estudiante:</strong> @matricula.Alumno?.Nombre @matricula.Alumno?.Apellido
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Motivo del Rechazo *</label>
+                                                            <textarea name="motivo" class="form-control" rows="3" required 
+                                                                      placeholder="Ej: Pago no verificado, datos incompletos, etc."></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <i class="bi bi-x-lg"></i> Rechazar Matrícula
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-check-circle" style="font-size: 4rem; color: #28a745;"></i>
+                        <p class="text-muted mt-3">No hay matrículas pendientes de aprobación.</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="card shadow-sm mt-3">
+            <div class="card-body">
+                <h6><i class="bi bi-info-circle"></i> Instrucciones</h6>
+                <ul class="mb-0 small">
+                    <li>Las matrículas sin pasarela quedan en estado <strong>Pendiente</strong> hasta ser aprobadas.</li>
+                    <li>Al <strong>aprobar</strong>, debes asignar un salón al estudiante de tus salones disponibles.</li>
+                    <li>El estudiante recibirá acceso completo una vez aprobado.</li>
+                    <li>Al <strong>rechazar</strong>, la matrícula se marca como rechazada con el motivo especificado.</li>
+                    <li>Las vacantes del ciclo se decrementan solo al aprobar.</li>
+                </ul>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .btn-success { background-color: #28a745; border-color: #28a745; }
+    .btn-success:hover { background-color: #218838; border-color: #1e7e34; }
+</style>

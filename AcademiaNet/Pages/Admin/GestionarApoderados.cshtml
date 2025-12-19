@@ -1,0 +1,183 @@
+@page
+@model Academic.Pages.Admin.GestionarApoderadosModel
+@{
+    ViewData["Title"] = "Gestionar Apoderados";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-people-fill"></i> Gestionar Apoderados</h2>
+            <p class="text-muted">Registra y gestiona los apoderados de los alumnos</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Formulario -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-plus-fill"></i> Registrar Apoderado</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="Create">
+                        <div class="mb-3">
+                            <label asp-for="Input.AlumnoId" class="form-label">Alumno *</label>
+                            <select asp-for="Input.AlumnoId" asp-items="Model.AlumnosSelectList" class="form-select">
+                                <option value="">Seleccione un alumno</option>
+                            </select>
+                            <span asp-validation-for="Input.AlumnoId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Nombre" class="form-label">Nombre *</label>
+                            <input asp-for="Input.Nombre" class="form-control" />
+                            <span asp-validation-for="Input.Nombre" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Apellido" class="form-label">Apellido *</label>
+                            <input asp-for="Input.Apellido" class="form-control" />
+                            <span asp-validation-for="Input.Apellido" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.DNI" class="form-label">DNI *</label>
+                            <input asp-for="Input.DNI" class="form-control" />
+                            <span asp-validation-for="Input.DNI" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Email" class="form-label">Email *</label>
+                            <input asp-for="Input.Email" type="email" class="form-control" />
+                            <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Telefono" class="form-label">Teléfono *</label>
+                            <input asp-for="Input.Telefono" class="form-control" />
+                            <span asp-validation-for="Input.Telefono" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Direccion" class="form-label">Dirección</label>
+                            <input asp-for="Input.Direccion" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Parentesco" class="form-label">Parentesco</label>
+                            <select asp-for="Input.Parentesco" class="form-select">
+                                <option value="">Seleccione</option>
+                                <option value="Padre">Padre</option>
+                                <option value="Madre">Madre</option>
+                                <option value="Tutor Legal">Tutor Legal</option>
+                                <option value="Abuelo/a">Abuelo/a</option>
+                                <option value="Tío/a">Tío/a</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="Input.RecibeNotificaciones" class="form-check-input" />
+                            <label asp-for="Input.RecibeNotificaciones" class="form-check-label">
+                                Recibe notificaciones
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save"></i> Registrar Apoderado
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Apoderados Registrados</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Apoderados.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Alumno</th>
+                                        <th>Apoderado</th>
+                                        <th>DNI</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th>Parentesco</th>
+                                        <th>Notif.</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var apoderado in Model.Apoderados)
+                                    {
+                                        <tr>
+                                            <td>@apoderado.Alumno?.Apellido, @apoderado.Alumno?.Nombre</td>
+                                            <td>@apoderado.Nombre @apoderado.Apellido</td>
+                                            <td>@apoderado.DNI</td>
+                                            <td>@apoderado.Email</td>
+                                            <td>@apoderado.Telefono</td>
+                                            <td>@(apoderado.Parentesco ?? "-")</td>
+                                            <td>
+                                                @if (apoderado.RecibeNotificaciones)
+                                                {
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                                }
+                                            </td>
+                                            <td>
+                                                <form method="post" asp-page-handler="Delete" asp-route-id="@apoderado.Id" 
+                                                      onsubmit="return confirm('¿Eliminar este apoderado?');"
+                                                      class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No hay apoderados registrados aún.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

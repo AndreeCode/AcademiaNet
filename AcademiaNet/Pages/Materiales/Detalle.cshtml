@@ -1,0 +1,141 @@
+@page "{id:int?}"
+@model Academic.Pages.Materiales.DetalleModel
+@{
+    ViewData["Title"] = "Detalle del Material";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-file-earmark-text"></i> Detalle del Material</h2>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Materiales/Editar" asp-route-id="@Model.Material.Id" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a asp-page="/Materiales/Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">@Model.Material.Title</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="bi bi-info-circle"></i> Información General</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">Descripción:</dt>
+                        <dd class="col-sm-8">@(Model.Material.Description ?? "Sin descripción")</dd>
+
+                        <dt class="col-sm-4">Tipo:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-info">@Model.Material.TipoMaterial</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Semana:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Material.Semana != null)
+                            {
+                                <span>Semana @Model.Material.Semana.NumeroSemana - @Model.Material.Semana.Tema</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No asignado</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Fecha de creación:</dt>
+                        <dd class="col-sm-8">@Model.Material.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+
+                <div class="col-md-6">
+                    <h6><i class="bi bi-building"></i> Asignaciones</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">Ciclo:</dt>
+                        <dd class="col-sm-8">@(Model.Material.Ciclo?.Nombre ?? "No asignado")</dd>
+
+                        <dt class="col-sm-4">Salón:</dt>
+                        <dd class="col-sm-8">@(Model.Material.Salon?.Nombre ?? "No asignado")</dd>
+
+                        <dt class="col-sm-4">Sede:</dt>
+                        <dd class="col-sm-8">@(Model.Material.Salon?.Sede?.Nombre ?? "No asignado")</dd>
+
+                        <dt class="col-sm-4">Tutor:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Material.Tutor != null)
+                            {
+                                <span>@Model.Material.Tutor.Nombre @Model.Material.Tutor.Apellido</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No asignado</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Curso:</dt>
+                        <dd class="col-sm-8">@(Model.Material.Curso?.Nombre ?? "No asignado")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="row">
+                <div class="col-md-12">
+                    <h6><i class="bi bi-file-earmark-arrow-down"></i> Archivo</h6>
+                    @if (Model.Material.TipoMaterial == Academic.Models.TipoMaterial.Enlace)
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-link-45deg"></i>
+                            <strong>Enlace externo:</strong>
+                            <a href="@Model.Material.FileUrl" target="_blank" class="alert-link">
+                                @Model.Material.FileUrl
+                            </a>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(Model.Material.FileUrl))
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-file-earmark-check"></i>
+                            <strong>Archivo:</strong> @Model.Material.FileName
+                            <br />
+                            <strong>Tamaño:</strong> @((Model.Material.FileSize ?? 0) / 1024.0 / 1024.0).ToString("N2") MB
+                            <br />
+                            <strong>Ruta:</strong> <code>@Model.Material.FileUrl</code>
+                        </div>
+
+                        <div class="mt-3">
+                            <a href="/uploads/@Model.Material.FileUrl" class="btn btn-primary" download>
+                                <i class="bi bi-download"></i> Descargar Archivo
+                            </a>
+                            @if (Model.Material.FileUrl.EndsWith(".pdf"))
+                            {
+                                <a href="/uploads/@Model.Material.FileUrl" target="_blank" class="btn btn-info">
+                                    <i class="bi bi-eye"></i> Ver en navegador
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            No hay archivo asociado
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header.bg-primary { background-color: #800020 !important; }
+    .btn-primary { background-color: #800020; border-color: #800020; }
+    .btn-primary:hover { background-color: #660019; border-color: #660019; }
+</style>

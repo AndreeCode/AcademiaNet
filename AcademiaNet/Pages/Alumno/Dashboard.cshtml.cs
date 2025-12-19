@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Academic.Data;
 using Academic.Models;
-using Microsoft.EntityFrameworkCore;
+using AlumnoModel = Academic.Models.Alumno;
+using System.Security.Claims;
 
 namespace Academic.Pages.Alumno;
 
@@ -20,43 +22,77 @@ public class DashboardModel : PageModel
         _userManager = userManager;
     }
 
-    public Academic.Models.Alumno? CurrentAlumno { get; set; }
+    public AlumnoModel CurrentAlumno { get; set; } = default!;
+    public Matricula? MatriculaActual { get; set; }
+    public List<Material> Materiales { get; set; } = new();
+    public Models.Apoderado? ApoderadoInfo { get; set; }
+    public List<Nota> NotasAlumno { get; set; } = new();
+    public decimal PromedioGeneral { get; set; }
+    public Salon? Salon => CurrentAlumno?.Salon;
+    public Sede? Sede => CurrentAlumno?.Salon?.Sede;
     public List<Matricula> Matriculas { get; set; } = new();
     public List<Horario> Horarios { get; set; } = new();
-    public Salon? Salon { get; set; }
-    public Sede? Sede { get; set; }
 
     [TempData]
     public string? SuccessMessage { get; set; }
 
     public async Task OnGetAsync()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null) return;
+        var userEmail = User.FindFirstValue(ClaimTypes.Email);
 
-        // map by email
         CurrentAlumno = await _context.Alumnos
-            .Include(a => a.Matriculas)
-                .ThenInclude(m => m.Ciclo)
             .Include(a => a.Salon)
-                .ThenInclude(s => s.Sede)
-            .FirstOrDefaultAsync(a => a.Email == user.Email);
+            .ThenInclude(s => s!.Sede)
+            .FirstOrDefaultAsync(a => a.Email == userEmail);
 
-        if (CurrentAlumno is null) return;
+        if (CurrentAlumno == null)
+        {
+            Response.Redirect("/Account/Login");
+            return;
+        }
 
-        Matriculas = await _context.Matriculas
+        // Obtener la matrícula actual
+        MatriculaActual = await _context.Matriculas
             .Where(m => m.AlumnoId == CurrentAlumno.Id)
-            .Include(m => m.Ciclo)
-            .OrderByDescending(m => m.CreatedAt)
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        // Si el usuario no tiene salón asignado, mostrar materiales solo si matrícula está aprobada
+        if (CurrentAlumno.SalonId.HasValue || (MatriculaActual != null && MatriculaActual.EstadoPago == EstadoPago.Pagado))
+        {
+            Materiales = await _context.Materiales
+                .Where(m => m.SalonId == CurrentAlumno.SalonId)
+                .ToListAsync();
+        }
+
+        // Cargar información del apoderado si existe
+        ApoderadoInfo = await _context.Apoderados
+            .FirstOrDefaultAsync(a => a.AlumnoId == CurrentAlumno.Id);
+
+        // Cargar notas del alumno
+        NotasAlumno = await _context.Notas
+            .Include(n => n.Ciclo)
+            .Include(n => n.Salon)
+            .Where(n => n.AlumnoId == CurrentAlumno.Id && n.IsActive)
+            .OrderByDescending(n => n.FechaEvaluacion)
             .ToListAsync();
 
-        Salon = CurrentAlumno.Salon;
-        Sede = Salon?.Sede;
+        PromedioGeneral = CurrentAlumno.PromedioGeneral ?? 0;
 
-        if (Salon != null)
+        // Cargar matrículas
+        Matriculas = await _context.Matriculas
+            .Include(m => m.Ciclo)
+            .Where(m => m.AlumnoId == CurrentAlumno.Id)
+            .OrderByDescending(m => m.Id)
+            .ToListAsync();
+
+        // Cargar horarios del salón
+        if (CurrentAlumno.SalonId.HasValue)
         {
             Horarios = await _context.Horarios
-                .Where(h => h.SalonId == Salon.Id)
+                .Where(h => h.SalonId == CurrentAlumno.SalonId)
+                .OrderBy(h => h.Dia)
+                .ThenBy(h => h.HoraInicio)
                 .ToListAsync();
         }
     }

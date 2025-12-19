@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: academianet-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Admin123!@#
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - academia-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Admin123!@#' -Q "SELECT 1" -b
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  academianet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: academianet-app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=AcademiaNetDB;User Id=sa;Password=Admin123!@#;TrustServerCertificate=True;MultipleActiveResultSets=true;ConnectRetryCount=10;ConnectRetryInterval=5
+      - MercadoPago__AccessToken=APP_USR-6577725024922213-121915-f3ebe56e68ad0d50cb6de5a9aa0b28ae-702673890
+      - MercadoPago__PublicKey=APP_USR-2aed66c7-5aa5-4bec-a2a0-dcc5c8f97373
+      - Culqi__PublicKey=pk_test_xZpBFhfnkH5w9WZL
+      - Culqi__SecretKey=sk_test_s1z51fGdjFvzWVJO
+    ports:
+      - "5000:80"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - academia-network
+    volumes:
+      - app_uploads:/app/FileStorage
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+    driver: local
+  app_uploads:
+    driver: local
+
+networks:
+  academia-network:
+    driver: bridge

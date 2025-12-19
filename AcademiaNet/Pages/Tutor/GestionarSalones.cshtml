@@ -1,0 +1,110 @@
+@page
+@model Academic.Pages.Tutor.GestionarSalonesModel
+@{
+    ViewData["Title"] = "Mis Salones";
+}
+
+<div class="container-fluid py-4">
+    <h2><i class="bi bi-door-open-fill"></i> Gestionar Mis Salones</h2>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Crear Nuevo Salón</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="Create">
+                        <div class="mb-3">
+                            <label asp-for="Input.Nombre" class="form-label">Nombre del Salón *</label>
+                            <input asp-for="Input.Nombre" class="form-control" placeholder="Ej: A1, B2" />
+                            <span asp-validation-for="Input.Nombre" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.SedeId" class="form-label">Sede *</label>
+                            <select asp-for="Input.SedeId" asp-items="Model.SedesSelectList" class="form-select">
+                                <option value="">Seleccione una sede</option>
+                            </select>
+                            <span asp-validation-for="Input.SedeId" class="text-danger small"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save"></i> Crear y Asignar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Mis Salones Asignados</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.MisSalones.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Salón</th>
+                                        <th>Sede</th>
+                                        <th>Dirección</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var salon in Model.MisSalones)
+                                    {
+                                        <tr>
+                                            <td><strong>@salon.Nombre</strong></td>
+                                            <td>@salon.Sede?.Nombre</td>
+                                            <td><small>@salon.Sede?.Direccion</small></td>
+                                            <td>
+                                                <form method="post" asp-page-handler="Desasignar" asp-route-salonId="@salon.Id"
+                                                      onsubmit="return confirm('¿Desasignar este salón?');"
+                                                      class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-warning">
+                                                        <i class="bi bi-x-circle"></i> Desasignar
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No tiene salones asignados. Cree uno nuevo.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,188 @@
+@page
+@model Academic.Pages.Apoderado.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard - Apoderado";
+}
+
+<div class="container-fluid py-4">
+    <h2><i class="bi bi-people-fill"></i> Dashboard - Apoderado</h2>
+
+    @if (Model.ApoderadoActual == null || Model.Hijo == null)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            No se encontró información de estudiante asociado.
+        </div>
+        return;
+    }
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-badge"></i> Información del Apoderado</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nombre:</strong> @Model.ApoderadoActual.Nombre @Model.ApoderadoActual.Apellido</p>
+                    <p><strong>DNI:</strong> @Model.ApoderadoActual.DNI</p>
+                    <p><strong>Email:</strong> @Model.ApoderadoActual.Email</p>
+                    <p><strong>Teléfono:</strong> @Model.ApoderadoActual.Telefono</p>
+                    <p><strong>Parentesco:</strong> @(Model.ApoderadoActual.Parentesco ?? "No especificado")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-circle"></i> Información del Estudiante</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nombre:</strong> @Model.Hijo.Nombre @Model.Hijo.Apellido</p>
+                    <p><strong>DNI:</strong> @Model.Hijo.DNI</p>
+                    <p><strong>Email:</strong> @Model.Hijo.Email</p>
+                    <p><strong>Salón:</strong> @Model.Hijo.Salon?.Nombre</p>
+                    <p><strong>Sede:</strong> @Model.Hijo.Salon?.Sede?.Nombre</p>
+                    <p><strong>Promedio General:</strong> 
+                        <span class="badge @(Model.PromedioGeneral >= 10.5m ? "bg-success" : "bg-danger") fs-6">
+                            @Model.PromedioGeneral.ToString("N2")
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notas del Estudiante -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Notas del Estudiante</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.NotasHijo.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Materia</th>
+                                <th>Descripción</th>
+                                <th>Calificación</th>
+                                <th>Tipo</th>
+                                <th>Ciclo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var nota in Model.NotasHijo)
+                            {
+                                <tr>
+                                    <td>@nota.FechaEvaluacion.ToString("dd/MM/yyyy")</td>
+                                    <td><strong>@nota.Materia</strong></td>
+                                    <td>@nota.Descripcion</td>
+                                    <td>
+                                        <span class="badge @(nota.Calificacion >= 10.5m ? "bg-success" : "bg-danger") fs-6">
+                                            @nota.Calificacion.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td>@nota.TipoEvaluacion</td>
+                                    <td>@nota.Ciclo?.Nombre</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No hay notas registradas aún.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Historial de Matrículas -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Historial de Matrículas y Pagos</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.MatriculasHijo.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Ciclo</th>
+                                <th>Fecha Matrícula</th>
+                                <th>Monto</th>
+                                <th>Estado Pago</th>
+                                <th>Fecha Pago</th>
+                                <th>Pasarela</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var matricula in Model.MatriculasHijo)
+                            {
+                                <tr>
+                                    <td><strong>@matricula.Ciclo?.Nombre</strong></td>
+                                    <td>@matricula.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                    <td>@matricula.Moneda @matricula.Monto.ToString("N2")</td>
+                                    <td>
+                                        @if (matricula.EstadoPago == EstadoPago.Pagado)
+                                        {
+                                            <span class="badge bg-success">PAGADO</span>
+                                        }
+                                        else if (matricula.EstadoPago == EstadoPago.Pendiente)
+                                        {
+                                            <span class="badge bg-warning">PENDIENTE</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">RECHAZADO</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (matricula.FechaPago.HasValue)
+                                        {
+                                            @matricula.FechaPago.Value.ToString("dd/MM/yyyy")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @switch (matricula.TipoPasarela)
+                                        {
+                                            case TipoPasarela.Culqi:
+                                                <span class="badge bg-info">Culqi</span>
+                                                break;
+                                            case TipoPasarela.MercadoPago:
+                                                <span class="badge bg-primary">MercadoPago</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">Manual</span>
+                                                break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No hay matrículas registradas.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header.bg-primary { background-color: #800020 !important; }
+</style>

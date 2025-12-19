@@ -17,7 +17,9 @@
     <div class="col-md-3">
         <div class="card shadow-sm mb-3">
             <div class="card-body text-center">
-                <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-dashboard mb-2" onerror="this.style.display='none'" style="max-width: 100px; height: auto;" />
+                <img src="~/images/logo-zoe.svg" alt="Academia Zoe" class="logo-dashboard mb-2" 
+                     onerror="this.style.display='none'" 
+                     style="max-width: 100px; height: auto;" />
                 <i class="bi bi-shield-check" style="font-size: 3rem; color: #800020;"></i>
                 <h5 class="mb-0 mt-2">Administrador</h5>
                 <small class="text-muted">Panel de Control</small>
@@ -43,6 +45,21 @@
                 </a>
                 <a class="list-group-item list-group-item-action" asp-page="/Semanas/Gestionar">
                     <i class="bi bi-calendar-week"></i> Gestionar Semanas
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/GestionarNotas">
+                    <i class="bi bi-clipboard-check"></i> Gestionar Notas
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/GestionarApoderados">
+                    <i class="bi bi-people-fill"></i> Gestionar Apoderados
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/GenerarReportes">
+                    <i class="bi bi-file-earmark-pdf-fill"></i> Generar Reportes
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/ConfigurarPasarela">
+                    <i class="bi bi-credit-card"></i> Configurar Pasarela de Pago
+                </a>
+                <a class="list-group-item list-group-item-action" asp-page="/Admin/AprobarMatriculas">
+                    <i class="bi bi-check-circle"></i> Aprobar Matrículas
                 </a>
             </div>
         </div>
@@ -251,25 +268,75 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <a asp-page="/Materiales/Index" class="btn btn-outline-primary w-100">
                                     <i class="bi bi-folder"></i><br />
                                     Gestionar Materiales
                                 </a>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <a asp-page="/Semanas/Gestionar" class="btn btn-outline-primary w-100">
                                     <i class="bi bi-calendar-week"></i><br />
                                     Gestionar Semanas
                                 </a>
                             </div>
-                            <div class="col-md-4">
-                                <a asp-page="/Public/Matriculate" class="btn btn-outline-primary w-100">
-                                    <i class="bi bi-eye"></i><br />
-                                    Ver Página de Matrícula
+                            <div class="col-md-3">
+                                <a asp-page="/Admin/GestionarNotas" class="btn btn-outline-success w-100">
+                                    <i class="bi bi-clipboard-check"></i><br />
+                                    Gestionar Notas
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a asp-page="/Admin/GestionarApoderados" class="btn btn-outline-info w-100">
+                                    <i class="bi bi-people-fill"></i><br />
+                                    Gestionar Apoderados
                                 </a>
                             </div>
                         </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-4">
+                                <a asp-page="/Admin/ConfigurarPasarela" class="btn btn-outline-warning w-100">
+                                    <i class="bi bi-credit-card-2-front"></i><br />
+                                    Configurar Pasarela
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a asp-page="/Admin/GenerarReportes" class="btn btn-outline-danger w-100">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i><br />
+                                    Generar Reportes PDF
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a asp-page="/Public/Matriculate" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-eye"></i><br />
+                                    Ver Página Matrícula
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card shadow-sm h-100 border-start border-primary border-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Apoderados</h6>
+                                <h2 class="mb-0">@Model.TotalApoderados</h2>
+                            </div>
+                            <div class="text-primary">
+                                <i class="bi bi-people" style="font-size: 2.5rem;"></i>
+                            </div>
+                        </div>
+                        <a asp-page="/Admin/GestionarApoderados" class="btn btn-sm btn-outline-primary mt-3 w-100">
+                            <i class="bi bi-pencil"></i> Gestionar
+                        </a>
+                        <a asp-page="/Admin/AsignarPadre" class="btn btn-sm btn-primary mt-2 w-100">
+                            <i class="bi bi-plus-circle"></i> Asignar Apoderado
+                        </a>
                     </div>
                 </div>
             </div>
@@ -284,6 +351,11 @@
     .list-group-item.active { background-color: #800020; border-color: #800020; }
     .btn-outline-primary { color: #800020; border-color: #800020; }
     .btn-outline-primary:hover { background-color: #800020; border-color: #800020; color: white; }
+    .btn-outline-success:hover { background-color: #198754; color: white; }
+    .btn-outline-warning:hover { background-color: #ffc107; color: #000; }
+    .btn-outline-info:hover { background-color: #0dcaf0; color: #000; }
+    .btn-outline-danger:hover { background-color: #dc3545; color: white; }
+    .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
     
     .stat-card {
         display: flex;

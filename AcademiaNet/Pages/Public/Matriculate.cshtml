@@ -7,7 +7,9 @@
 
 <section class="hero text-center py-5" style="background: linear-gradient(135deg, #800020 0%, #b30030 100%); color: white;">
     <div class="container">
-        <img src="~/images/logo-zoe.png" alt="Academia Zoe" class="logo-hero mb-3" onerror="this.style.display='none'" style="max-width: 120px; height: auto;" />
+        <img src="~/images/logo-zoe.svg" alt="Academia Zoe" class="logo-hero mb-3" 
+             onerror="this.style.display='none'" 
+             style="max-width: 120px; height: auto;" />
         <h1 class="display-4 fw-bold">Matricúlate en Academia Zoe</h1>
         <p class="lead">Inscríbete al próximo ciclo y accede a tutorías, recursos y clases en vivo.</p>
         <p class="fst-italic">Sueña, Decide e Ingresa</p>
@@ -19,6 +21,14 @@
             <div class="badge bg-success fs-6 mt-2 ms-2">
                 <i class="bi bi-cash"></i> S/ @Model.CurrentCiclo.MontoMatricula.ToString("N2")
             </div>
+            @if (Model.CurrentCiclo.Vacantes > 0)
+            {
+                var ocupadas = Model.VacantesOcupadas;
+                var disponibles = Model.CurrentCiclo.Vacantes - ocupadas;
+                <div class="badge @(disponibles > 10 ? "bg-info" : disponibles > 0 ? "bg-warning" : "bg-danger") fs-6 mt-2 ms-2">
+                    <i class="bi bi-people-fill"></i> Vacantes: @disponibles/@Model.CurrentCiclo.Vacantes
+                </div>
+            }
         }
     </div>
 </section>
@@ -313,66 +323,226 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        // Validación DNI: letras mayúsculas y números, convertir a mayúsculas automáticamente
-        document.querySelector('input[name="Input.DNI"]').addEventListener('input', function (e) {
-            // Convertir a mayúsculas y filtrar solo letras y números
-            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 20);
-        });
-
-        // Tooltip de Bootstrap
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
-
-        // Validación del formulario antes de enviar
-        document.getElementById('matriculaForm')?.addEventListener('submit', function(e) {
-            var dni = document.querySelector('input[name="Input.DNI"]').value;
-            var password = document.querySelector('input[name="Input.Password"]').value;
-            var confirmPassword = document.querySelector('input[name="Input.ConfirmPassword"]').value;
-            var acceptTerms = document.getElementById('acceptTerms').checked;
-
-            if (dni.length < 8) {
-                e.preventDefault();
-                alert('El DNI debe tener al menos 8 caracteres.');
-                return false;
+    
+    @if (Model.PasarelaActiva == Academic.Models.TipoPasarela.Culqi && !string.IsNullOrEmpty(Model.CulqiPublicKey) && Model.CurrentCiclo != null)
+    {
+        <script>
+            let culqiReady = false;
+            let culqiLoadAttempts = 0;
+            const MAX_ATTEMPTS = 3;
+            const publicKey = '@Model.CulqiPublicKey';
+            const montoEnCentavos = @((int)(Model.CurrentCiclo.MontoMatricula * 100));
+            
+            function loadCulqiScript() {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://checkout.culqi.com/v4.js';
+                    script.async = true;
+                    
+                    const timeout = setTimeout(() => {
+                        script.remove();
+                        reject(new Error('Timeout al cargar Culqi'));
+                    }, 10000); // 10 segundos timeout
+                    
+                    script.onload = () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    };
+                    
+                    script.onerror = () => {
+                        clearTimeout(timeout);
+                        script.remove();
+                        reject(new Error('Error al cargar script de Culqi'));
+                    };
+                    
+                    document.head.appendChild(script);
+                });
+            }
+            
+            async function initCulqi() {
+                try {
+                    await loadCulqiScript();
+                    
+                    // Verificar que Culqi esté disponible
+                    if (typeof Culqi === 'undefined') {
+                        throw new Error('Culqi no está disponible');
+                    }
+                    
+                    console.log('? Culqi cargado correctamente');
+                    
+                    Culqi.publicKey = publicKey;
+                    Culqi.settings({
+                        title: 'Academia Zoe',
+                        currency: 'PEN',
+                        amount: montoEnCentavos
+                    });
+                    
+                    Culqi.options({
+                        lang: 'auto',
+                        installments: false,
+                        paymentMethods: {
+                            tarjeta: true,
+                            yape: true
+                        },
+                        style: {
+                            maincolor: '#800020',
+                            buttontext: '#ffffff'
+                        }
+                    });
+                    
+                    window.culqi = function() {
+                        if (Culqi.token) {
+                            fetch('/Public/CulqiCallback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ token: Culqi.token.id, email: Culqi.token.email })
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert('? ' + data.message);
+                                    window.location.href = data.redirectUrl || '/Account/Login';
+                                } else {
+                                    alert('? ' + (data.error || 'Error'));
+                                }
+                            });
+                        } else if (Culqi.error) {
+                            alert('? ' + (Culqi.error.user_message || Culqi.error.merchant_message));
+                        }
+                    };
+                    
+                    culqiReady = true;
+                    setupForm();
+                    
+                } catch (error) {
+                    console.error('? Error al inicializar Culqi:', error);
+                    
+                    culqiLoadAttempts++;
+                    if (culqiLoadAttempts < MAX_ATTEMPTS) {
+                        console.log(`Reintentando... (${culqiLoadAttempts}/${MAX_ATTEMPTS})`);
+                        setTimeout(initCulqi, 2000);
+                    } else {
+                        showCulqiError();
+                    }
+                }
+            }
+            
+            function showCulqiError() {
+                const form = document.getElementById('matriculaForm');
+                if (form) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-warning';
+                    alert.innerHTML = `
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Sistema de pagos temporalmente no disponible</strong><br>
+                        El servicio de pagos Culqi está experimentando problemas técnicos.
+                        Por favor, intente más tarde o contacte con la administración.
+                    `;
+                    form.insertBefore(alert, form.firstChild);
+                }
+            }
+            
+            function setupForm() {
+                const form = document.getElementById('matriculaForm');
+                if (!form) return;
+                
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    if (!culqiReady) {
+                        alert('?? Sistema de pagos no disponible. Intente más tarde.');
+                        return;
+                    }
+                    
+                    const nombre = document.querySelector('input[name="Input.Nombre"]').value.trim();
+                    const apellido = document.querySelector('input[name="Input.Apellido"]').value.trim();
+                    const dni = document.querySelector('input[name="Input.DNI"]').value.trim();
+                    const email = document.querySelector('input[name="Input.Email"]').value.trim();
+                    const password = document.querySelector('input[name="Input.Password"]').value;
+                    const confirmPassword = document.querySelector('input[name="Input.ConfirmPassword"]').value;
+                    const acceptTerms = document.getElementById('acceptTerms').checked;
+                    
+                    if (!nombre || nombre.length < 2) return alert('?? Nombre inválido');
+                    if (!apellido || apellido.length < 2) return alert('?? Apellido inválido');
+                    if (!dni || dni.length < 8) return alert('?? DNI inválido');
+                    if (!email || email.indexOf('@@@@') === -1) return alert('?? Email inválido');
+                    if (!password || password.length < 6) return alert('?? Contraseña muy corta');
+                    if (password !== confirmPassword) return alert('?? Contraseñas no coinciden');
+                    if (!acceptTerms) return alert('?? Acepte los términos');
+                    
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    }).then(r => {
+                        if (r.ok) {
+                            Culqi.settings({
+                                title: 'Matrícula - ' + nombre + ' ' + apellido,
+                                currency: 'PEN',
+                                amount: montoEnCentavos
+                            });
+                            Culqi.open();
+                        }
+                    });
+                });
+            }
+            
+            // Iniciar carga de Culqi
+            initCulqi();
+        </script>
+    }
+    else if (Model.PasarelaActiva == Academic.Models.TipoPasarela.MercadoPago)
+    {
+        <script>
+            const dniInput = document.querySelector('input[name="Input.DNI"]');
+            if (dniInput) {
+                dniInput.addEventListener('input', function (e) {
+                    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 20);
+                });
+            }
+        </script>
+    }
+    else
+    {
+        <script>
+            const dniInput = document.querySelector('input[name="Input.DNI"]');
+            if (dniInput) {
+                dniInput.addEventListener('input', function (e) {
+                    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 20);
+                });
             }
 
-            if (password.length < 6) {
-                e.preventDefault();
-                alert('La contraseña debe tener al menos 6 caracteres.');
-                return false;
-            }
+            const matriculaForm = document.getElementById('matriculaForm');
+            if (matriculaForm) {
+                matriculaForm.addEventListener('submit', function(e) {
+                    const dni = document.querySelector('input[name="Input.DNI"]')?.value || '';
+                    const password = document.querySelector('input[name="Input.Password"]')?.value || '';
+                    const confirmPassword = document.querySelector('input[name="Input.ConfirmPassword"]')?.value || '';
+                    const acceptTerms = document.getElementById('acceptTerms')?.checked || false;
 
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                alert('Las contraseñas no coinciden.');
-                return false;
+                    if (dni.length < 8) {
+                        e.preventDefault();
+                        alert('El DNI debe tener al menos 8 caracteres.');
+                        return false;
+                    }
+                    if (password.length < 6) {
+                        e.preventDefault();
+                        alert('La contraseña debe tener al menos 6 caracteres.');
+                        return false;
+                    }
+                    if (password !== confirmPassword) {
+                        e.preventDefault();
+                        alert('Las contraseñas no coinciden.');
+                        return false;
+                    }
+                    if (!acceptTerms) {
+                        e.preventDefault();
+                        alert('Debe aceptar los términos y condiciones.');
+                        return false;
+                    }
+                });
             }
-
-            if (!acceptTerms) {
-                e.preventDefault();
-                alert('Debe aceptar los términos y condiciones para continuar.');
-                return false;
-            }
-        });
-
-        // Mostrar/ocultar contraseña
-        function togglePasswordVisibility(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
-            }
-        }
-    </script>
+        </script>
+    }
 }
 
 <style>
